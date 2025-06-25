@@ -1,0 +1,23 @@
+# .gitignore
+node_modules/
+*.log
+dist/
+build/
+*.zip
+*.exe
+*.mp4
+*.psd
+.DS_Store
+.env
+# Ignore all node_modules folders anywhere
+node_modules/
+
+# Optional - other large folders
+dist/
+build/
+
+# Common large files
+*.zip
+*.mp4
+*.exe
+*.psd
