@@ -1,16 +1,58 @@
 {
   "name": "desktop",
   "version": "1.0.0",
-  "main": "main.js",
+  "type": "module",
+  "main": "src/main.js",
   "scripts": {
-    "start": "electron .",
+    "build": "node build.js",
+    "start": "npm run build && electron .",
+    "dev": "electron .",
+    "dist-win": "npm run build && electron-builder --win",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
+  "build": {
+    "appId": "com.sams.desktop",
+    "productName": "SAMS Desktop",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "src/**/*",
+      "public/**/*",
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
   "devDependencies": {
-    "electron": "^36.5.0"
+    "electron": "^36.7.0",
+    "electron-builder": "^24.0.0"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.2.0",
+    "echarts": "^6.0.0",
+    "pg": "^8.16.3",
+    "postgres": "^3.4.7",
+    "serialport": "^13.0.0"
   }
 }

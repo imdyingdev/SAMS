@@ -1,23 +1,130 @@
-# .gitignore
+# SAMS Project .gitignore
+
+# Exclude specific directories
+lottie/
+supabase/
+
+# Dependencies
 node_modules/
-*.log
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Build outputs
 dist/
 build/
-*.zip
-*.exe
-*.mp4
-*.psd
-.DS_Store
+dist-electron/
+.expo/
+.next/
+out/
+
+# Environment files
 .env
-# Ignore all node_modules folders anywhere
-node_modules/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Optional - other large folders
-dist/
-build/
+# IDE and editor files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
 
-# Common large files
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Dependency directories
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Large media files
 *.zip
+*.rar
+*.7z
+*.tar.gz
 *.mp4
-*.exe
+*.avi
+*.mov
+*.wmv
+*.flv
+*.webm
+*.mkv
 *.psd
+*.ai
+*.sketch
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Python cache (if any Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Electron
+dist-electron/
+release/
+
+# Mobile specific
+*.apk
+*.ipa
+*.aab
+
+# Backup files
+*.bak
+*.backup
+*~

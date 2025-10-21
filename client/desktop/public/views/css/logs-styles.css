@@ -1,0 +1,461 @@
+/* Logs Page Specific Styles */
+
+.logs-container {
+    background-color: transparent;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    box-shadow: var(--shadow-primary);
+    overflow: visible;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 200px); /* Fixed height for proper flexbox layout */
+    gap: 1rem; /* Consistent gap like your test file */
+}
+
+.logs-header {
+    position: relative;
+    background: transparent;
+    padding: 0; /* Remove all padding to eliminate extra gaps */
+    border-radius: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logs-content {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+    flex: 1; /* Take remaining space */
+    min-height: 0; /* Allow flex shrinking */
+    overflow: hidden;
+    border-radius: var(--border-radius);
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
+}
+
+.logs-list-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.logs-list-container::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 0;
+}
+
+.logs-list-container::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    border: 2px solid transparent;
+}
+
+.logs-list-container::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.logs-list-container {
+    width: 100%;
+    height: 100%;
+    padding: 1.5rem;
+    background: var(--glass-light);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Logs Summary Cards - Fixed at top */
+.logs-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 0; /* Remove extra margin for consistent flexbox spacing */
+    flex-shrink: 0; /* Prevent shrinking when content overflows */
+}
+
+.summary-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.summary-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+    padding: 8px; /* Padding for outer pink circle */
+    position: relative;
+}
+
+.summary-icon::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    z-index: 0;
+    transition: all 0.3s ease, transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+
+.summary-icon::before {
+    content: '';
+    position: absolute;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.summary-icon img {
+    width: 45%;
+    height: 45%;
+    object-fit: contain;
+    filter: brightness(0) saturate(100%) invert(100%); /* White filter for icons */
+    position: relative;
+    z-index: 2;
+}
+
+.summary-icon.time-in::after {
+    background: rgba(34, 197, 94, 0.4); /* Green transparent outer circle */
+}
+
+.summary-card:hover .summary-icon.time-in::after {
+    animation: bounce 0.4s ease-out; /* Bounce animation from test file */
+}
+
+.summary-card:hover .summary-icon.time-in::before {
+    animation: bounce 0.4s ease-out 0.07s; /* Bounce animation with more noticeable delay for ripple effect */
+}
+
+.summary-icon.time-in::before {
+    background: #22c55e; /* Green inner circle */
+}
+
+.summary-icon.time-in img {
+    margin-left: -7px; /* Move the icon image 7px to the left inside the circle */
+}
+
+.summary-icon.time-out::after {
+    background: rgba(239, 68, 68, 0.4); /* Red transparent outer circle */
+}
+
+.summary-card:hover .summary-icon.time-out::after {
+    animation: bounce 0.4s ease-out; /* Bounce animation from test file */
+}
+
+.summary-card:hover .summary-icon.time-out::before {
+    animation: bounce 0.4s ease-out 0.07s; /* Bounce animation with more noticeable delay for ripple effect */
+}
+
+.summary-icon.time-out::before {
+    background: #ef4444; /* Red inner circle */
+}
+
+.summary-icon.time-out img {
+    margin-right: -7px; /* Move the icon image 7px to the right inside the circle */
+}
+
+.summary-icon.total::after {
+    background: rgba(59, 130, 246, 0.4); /* Blue transparent outer circle */
+}
+
+.summary-card:hover .summary-icon.total::after {
+    animation: bounce 0.4s ease-out; /* Bounce animation from test file */
+}
+
+.summary-card:hover .summary-icon.total::before {
+    animation: bounce 0.4s ease-out 0.07s; /* Bounce animation with more noticeable delay for ripple effect */
+}
+
+.summary-icon.total::before {
+    background: #3b82f6; /* Blue inner circle */
+}
+
+/* Bounce Animation from test file */
+@keyframes bounce {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.8);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.summary-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.summary-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-white);
+    line-height: 1;
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: var(--text-white-muted);
+    margin-top: 0.25rem;
+}
+
+/* Logs List */
+.logs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0; /* Remove gap since we're using line separators */
+    flex: 1;
+    min-height: 0;
+}
+
+.log-entry {
+    background: transparent; /* Remove container background */
+    border: none; /* Remove container borders */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* Add line separator */
+    border-radius: 0; /* Remove rounded corners */
+    padding: 1rem; /* Add horizontal and vertical padding by default */
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+}
+
+.log-entry:hover {
+    background: rgba(255, 255, 255, 0.03); /* Subtle hover effect */
+    border-bottom-color: rgba(255, 255, 255, 0.2); /* Highlight separator on hover */
+    transform: none; /* Remove lift effect */
+}
+
+.log-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1rem;
+    color: white;
+    text-transform: uppercase;
+}
+
+.log-icon.time-in {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; /* Violet gradient like RFID buttons */
+}
+
+.log-icon.time-out {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; /* Violet gradient like RFID buttons */
+}
+
+.log-icon.student-action {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+.log-icon.auth-action {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+.log-icon.system-action {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+.log-icon.default-action {
+    background: linear-gradient(135deg, #64748b, #475569);
+}
+
+.log-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.log-student-name {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text-white-muted);
+    margin-bottom: 0.5rem;
+}
+
+.log-actions-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.log-action-container {
+    display: inline-block;
+}
+
+.log-action {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-white);
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px;
+    font-weight: 500;
+}
+
+.log-action.time_in {
+    background: rgba(34, 197, 94, 0.8); /* Green background for Time In */
+}
+
+.log-action.time_out {
+    background: rgba(239, 68, 68, 0.8); /* Red background for Time Out */
+}
+
+.log-rfid-container {
+    display: inline-block;
+}
+
+.log-rfid {
+    font-size: 0.875rem;
+    color: var(--text-white);
+    background: rgba(59, 130, 246, 0.8); /* Blue background */
+    padding: 0.25rem 0.75rem;
+    border-radius: 50px; /* 50% border radius as requested */
+    font-family: inherit; /* Use same font as action */
+    font-weight: 600; /* Match action font weight */
+}
+
+.log-timestamp {
+    text-align: right;
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    color: var(--text-white-muted);
+    white-space: nowrap;
+}
+
+
+.student-info {
+    font-size: 0.875rem;
+    color: var(--text-white);
+    background: rgba(59, 130, 246, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.rfid-info {
+    font-size: 0.875rem;
+    color: var(--text-white);
+    background: rgba(16, 185, 129, 0.2);
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    font-family: monospace;
+}
+
+.log-extra {
+    font-size: 0.875rem;
+    color: var(--text-white-muted);
+    font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .logs-summary {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-card {
+        padding: 1rem;
+    }
+    
+    .summary-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+    
+    .summary-number {
+        font-size: 1.5rem;
+    }
+    
+    .log-entry {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+    
+    .log-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+    
+    .log-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+    
+    .log-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}
+
+/* Override table-options spacing for logs */
+.logs-container .table-options {
+    margin: 0 !important; /* Remove ALL margins for clean flexbox distribution */
+    flex-shrink: 0; /* Prevent pagination from shrinking */
+}
+
+/* Empty state for logs */
+.logs-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+}
+
+.logs-empty-state i {
+    font-size: 4rem;
+    color: var(--text-white-muted);
+    margin-bottom: 1rem;
+}
+
+.logs-empty-state h3 {
+    font-size: 1.5rem;
+    color: var(--text-white);
+    margin-bottom: 0.5rem;
+}
+
+.logs-empty-state p {
+    color: var(--text-white-muted);
+    font-size: 1rem;
+}

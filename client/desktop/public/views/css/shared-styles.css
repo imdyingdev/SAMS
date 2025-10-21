@@ -1,0 +1,85 @@
+/* Shared Styles for AMPID Attendance System */
+
+/* Basic Reset & Body Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--gradient-background);
+    min-height: 100vh;
+    color: var(--text-white);
+    -webkit-app-region: drag; /* Make entire window draggable like testing.html */
+}
+
+/* SPA View Transitions */
+.main-content {
+    opacity: 1;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.main-content.fade-out {
+    opacity: 0;
+}
+
+.main-content.fade-in {
+    opacity: 1;
+}
+
+/* Header and sidebar styles moved to separate files */
+
+/* General Button Styles */
+.btn {
+    -webkit-app-region: no-drag; /* Make buttons clickable */
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.9rem;
+}
+
+/* Logout button styles moved to header.css */
+
+/* Loading States */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    color: var(--text-secondary);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-container p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Smooth transitions for students table and loading */
+#students-loading {
+    transition: opacity 0.2s ease-in-out;
+}
+
+#students-table {
+    transition: opacity 0.2s ease-in-out;
+}
