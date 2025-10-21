@@ -192,9 +192,17 @@ Detailed documentation for each component:
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
+## 📄 License & Copyright
 
-This project is licensed under the ISC License - see individual component README files for specific details.
+**Copyright (c) 2025 SAMS Development Team. All Rights Reserved.**
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Copyright Notice
+This software contains proprietary and confidential information. See [COPYRIGHT.txt](COPYRIGHT.txt) for full copyright terms and conditions.
+
+### Third-Party Licenses
+Individual components may have additional licensing terms. See respective component README files and package.json files for dependency licensing information.
 
 ## 🆘 Support
 
