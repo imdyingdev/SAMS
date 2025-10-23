@@ -266,18 +266,60 @@ function renderStudents(students) {
             <td>${fullName}</td>
             <td>${student.grade_level || 'N/A'}</td>
             <td>${rfidStatus}</td>
+            <td class="action-icons">
+                <i class="fa-solid fa-pen-to-square action-icon edit-icon" title="Edit"></i>
+                <i class="fa-solid fa-trash action-icon delete-icon" title="Delete"></i>
+            </td>
         `;
         
-        // Add click event to open student info
-        row.addEventListener('click', () => {
-            showStudentInfo(student);
-        });
+        // Add click events for action icons
+        const editIcon = row.querySelector('.edit-icon');
+        const deleteIcon = row.querySelector('.delete-icon');
         
-        // Add cursor pointer style
-        row.style.cursor = 'pointer';
+        if (editIcon) {
+            editIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showStudentInfo(student);
+            });
+        }
+        
+        if (deleteIcon) {
+            deleteIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleDeleteStudent(student);
+            });
+        }
         
         studentListBody.appendChild(row);
     });
+}
+
+// Handle delete student
+async function handleDeleteStudent(student) {
+    const fullName = `${student.first_name || ''} ${student.middle_name ? student.middle_name + ' ' : ''}${student.last_name || ''} ${student.suffix || ''}`.trim();
+    
+    if (confirm(`Are you sure you want to delete ${fullName}?\n\nThis action cannot be undone.`)) {
+        try {
+            if (window.electronAPI) {
+                const result = await window.electronAPI.deleteStudent(student.id);
+                
+                if (result && result.success) {
+                    console.log('Student deleted successfully:', student.id);
+                    // Reload the current page to refresh the list
+                    loadStudents(currentPage);
+                } else {
+                    console.error('Failed to delete student:', result?.message);
+                    alert(`Failed to delete student: ${result?.message || 'Unknown error'}`);
+                }
+            } else {
+                console.error('Electron API not available');
+                alert('Cannot delete student: Application API not available');
+            }
+        } catch (error) {
+            console.error('Error deleting student:', error);
+            alert(`Error deleting student: ${error.message}`);
+        }
+    }
 }
 
 // Trigger search/filter with pagination
@@ -427,6 +469,7 @@ function setupStudentInfoButtons(originalContent, studentTableContainer) {
             // Reset student info view state
             isStudentInfoViewActive = false;
             studentTableContainer.innerHTML = originalContent;
+            setupSearchAndFilter(); // Re-setup event listeners
             loadStudents();
         });
     }
@@ -436,6 +479,7 @@ function setupStudentInfoButtons(originalContent, studentTableContainer) {
             // Reset student info view state
             isStudentInfoViewActive = false;
             studentTableContainer.innerHTML = originalContent;
+            setupSearchAndFilter(); // Re-setup event listeners
             loadStudents();
         });
     }
@@ -462,6 +506,7 @@ function setupStudentInfoButtons(originalContent, studentTableContainer) {
                         // Reset student info view state
                         isStudentInfoViewActive = false;
                         studentTableContainer.innerHTML = originalContent;
+                        setupSearchAndFilter(); // Re-setup event listeners
                         loadStudents();
                     } else {
                         console.error('Failed to update student information.');

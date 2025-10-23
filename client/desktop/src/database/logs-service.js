@@ -20,10 +20,9 @@ export async function createLogEntry(logType, description, rfid = null, studentI
         const values = [logType, description, rfid, studentId, details];
         const result = await pool.query(query, values);
         
-        console.log('Log entry created:', result.rows[0]);
         return { success: true, log: result.rows[0] };
     } catch (error) {
-        console.error('Error creating log entry:', error);
+        console.error('[LOGS] Error creating log entry:', error.message);
         throw new Error(`Failed to create log entry: ${error.message}`);
     }
 }
@@ -163,8 +162,6 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
             hasNextPage: page < totalPages
         };
         
-        console.log(`Retrieved ${logs.length} RFID logs for page ${page}/${totalPages}`);
-        
         return {
             logs: logs,
             pagination: pagination,
@@ -172,8 +169,8 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
         };
         
     } catch (error) {
-        console.error('Error getting paginated RFID logs:', error);
-        throw new Error(`Failed to retrieve RFID logs: ${error.message}`);
+        console.error('[LOGS] Error getting paginated logs:', error.message);
+        throw new Error(`Failed to retrieve logs: ${error.message}`);
     }
 }
 
@@ -290,10 +287,10 @@ export async function cleanupOldLogs(daysToKeep = 90) {
         
         const result = await pool.query(query);
         
-        console.log(`Cleaned up ${result.rowCount} old log entries`);
+        // Cleanup complete
         return { success: true, deletedCount: result.rowCount };
     } catch (error) {
-        console.error('Error cleaning up old logs:', error);
+        console.error('[LOGS] Error cleaning up old logs:', error.message);
         throw new Error(`Failed to cleanup old logs: ${error.message}`);
     }
 }

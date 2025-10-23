@@ -202,7 +202,7 @@ export default function LoginScreen({ onLogin }: LoginScreenProps) {
                     ]}
                     value={identifier}
                     onChangeText={setIdentifier}
-                    placeholder="Email, LRN, or Student ID"
+                    placeholder="Email or LRN"
                     placeholderTextColor="#999"
                     autoCapitalize="none"
                     autoCorrect={false}

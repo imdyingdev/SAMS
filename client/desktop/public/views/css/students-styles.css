@@ -693,6 +693,37 @@
     color: var(--text-white);
 }
 
+/* Action Icons */
+.action-icons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.action-icon {
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 6px;
+    border-radius: 4px;
+}
+
+.action-icon:hover {
+    transform: scale(1.1);
+}
+
+.edit-icon:hover {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.delete-icon:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
 /* Responsive Pagination */
 @media (max-width: 768px) {
     .pagination-bar {

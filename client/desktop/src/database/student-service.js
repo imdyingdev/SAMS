@@ -2,7 +2,6 @@ import { query } from './db-connection.js';
 
 // Save a new student to the database
 async function saveStudent(studentData) {
-  console.log('Attempting to save student:', studentData);
 
   const insertQuery = `
     INSERT INTO students (first_name, middle_name, last_name, suffix, lrn, grade_level, gender, rfid)
@@ -23,7 +22,6 @@ async function saveStudent(studentData) {
 
   try {
     const result = await query(insertQuery, params);
-    console.log('Student saved successfully:', result.rows[0]);
     return { success: true, data: result.rows[0] };
   } catch (error) {
     console.error('Error in saveStudent:', error.message);
@@ -43,7 +41,6 @@ async function saveStudent(studentData) {
 // Get all students with RFID assignments (kept for backward compatibility)
 async function getAllStudents() {
   try {
-    console.log('📚 Fetching all students from database...');
     
     const result = await query(`
       SELECT 
@@ -64,11 +61,10 @@ async function getAllStudents() {
         first_name ASC
     `);
     
-    console.log(`✅ Retrieved ${result.rows.length} students`);
     return result.rows;
     
   } catch (error) {
-    console.error('🔥 Error fetching students:', error);
+    console.error('[STUDENT] Error fetching students:', error.message);
     throw new Error(`Failed to fetch students: ${error.message}`);
   }
 }
@@ -76,8 +72,6 @@ async function getAllStudents() {
 // Get paginated students with search and filters
 async function getStudentsPaginated(page = 1, pageSize = 50, searchTerm = '', gradeFilter = '', rfidFilter = '') {
   try {
-    console.log(`📚 Fetching students page ${page} (${pageSize} per page)...`);
-    console.log(`🔍 Search: "${searchTerm}", Grade: "${gradeFilter}", RFID: "${rfidFilter}"`);
     
     const offset = (page - 1) * pageSize;
     
@@ -167,11 +161,10 @@ async function getStudentsPaginated(page = 1, pageSize = 50, searchTerm = '', gr
       }
     };
     
-    console.log(`✅ Retrieved ${dataResult.rows.length} students (page ${page}/${totalPages}, total: ${totalStudents})`);
     return result;
     
   } catch (error) {
-    console.error('🔥 Error fetching paginated students:', error);
+    console.error('[STUDENT] Error:', error.message);
     throw new Error(`Failed to fetch students: ${error.message}`);
   }
 }
@@ -179,7 +172,6 @@ async function getStudentsPaginated(page = 1, pageSize = 50, searchTerm = '', gr
 // Delete a student by ID
 async function deleteStudent(studentId) {
   try {
-    console.log(`🗑️ Deleting student with ID: ${studentId}`);
     
     // First check if student exists
     const checkResult = await query(
@@ -203,11 +195,10 @@ async function deleteStudent(studentId) {
       throw new Error('Failed to delete student');
     }
     
-    console.log(`✅ Successfully deleted student: ${studentName}`);
     return { success: true, deletedStudent: deleteResult.rows[0] };
     
   } catch (error) {
-    console.error('🔥 Error deleting student:', error);
+    console.error('[STUDENT] Error:', error.message);
     throw new Error(`Failed to delete student: ${error.message}`);
   }
 }
@@ -215,7 +206,6 @@ async function deleteStudent(studentId) {
 // Update a student's information
 async function updateStudent(studentId, studentData) {
   try {
-    console.log(`✏️ Updating student with ID: ${studentId}`);
     
     const {
       first_name,
@@ -257,11 +247,10 @@ async function updateStudent(studentId, studentData) {
       throw new Error('Student not found or update failed');
     }
     
-    console.log(`✅ Successfully updated student: ${first_name} ${last_name}`);
     return { success: true, data: result.rows[0] };
     
   } catch (error) {
-    console.error('🔥 Error updating student:', error);
+    console.error('[STUDENT] Error:', error.message);
     throw new Error(`Failed to update student: ${error.message}`);
   }
 }
@@ -269,7 +258,6 @@ async function updateStudent(studentId, studentData) {
 // Get student by ID
 async function getStudentById(studentId) {
   try {
-    console.log(`🔍 Fetching student with ID: ${studentId}`);
     
     const result = await query(
       'SELECT * FROM students WHERE id = $1',
@@ -280,11 +268,10 @@ async function getStudentById(studentId) {
       throw new Error('Student not found');
     }
     
-    console.log(`✅ Found student: ${result.rows[0].first_name} ${result.rows[0].last_name}`);
     return result.rows[0];
     
   } catch (error) {
-    console.error('🔥 Error fetching student:', error);
+    console.error('[STUDENT] Error:', error.message);
     throw new Error(`Failed to fetch student: ${error.message}`);
   }
 }

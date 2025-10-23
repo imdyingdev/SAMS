@@ -19,7 +19,9 @@ import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { loginStyles } from '../styles/login.styles';
 import { useFonts } from '../hooks/useFonts';
-import { createUserAccount, validateRegistrationInputs } from '../services/authService';
+import { createUserAccount, validateRegistrationInputs, validateEmailExistence, completeRegistration } from '../services/authService';
+import { sendVerificationEmail } from '../services/regEmailService';
+import RegistrationVerificationModal from './RegistrationVerificationModal';
 
 // Suffix options for dropdown
 const SUFFIX_OPTIONS = [
@@ -32,7 +34,9 @@ const SUFFIX_OPTIONS = [
   { label: 'V', value: 'V' },
 ];
 
-export default function RegisterScreen() {
+interface RegisterScreenProps {}
+
+export default function RegisterScreen(props: RegisterScreenProps = {}) {
   // Store screen width as constant to avoid recalculation
   const screenWidth = Dimensions.get('window').width;
   
@@ -49,6 +53,10 @@ export default function RegisterScreen() {
   const [currentStep, setCurrentStep] = useState(1); // 1 = Student Info, 2 = Account Info
   const [slideAnim] = useState(new Animated.Value(0)); // Animation value
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [emailValidating, setEmailValidating] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [pendingStudentData, setPendingStudentData] = useState<any>(null);
   
   // Keyboard animation values - simple position compression using transform
   const contentTranslateY = useRef(new Animated.Value(0)).current;
@@ -177,6 +185,74 @@ export default function RegisterScreen() {
     }).start();
   };
 
+  const handleEmailValidation = async () => {
+    if (!email.trim()) {
+      setEmailError(null);
+      return;
+    }
+
+    setEmailValidating(true);
+    setEmailError(null);
+
+    try {
+      const result = await validateEmailExistence(email);
+      if (!result.isValid) {
+        setEmailError(result.message);
+        Alert.alert('Invalid Email', result.message, [
+          { text: 'OK', style: 'default' }
+        ]);
+      } else {
+        setEmailError(null);
+      }
+    } catch (error) {
+      console.error('Email validation error:', error);
+    } finally {
+      setEmailValidating(false);
+    }
+  };
+
+  const handleVerificationSuccess = async () => {
+    if (!pendingStudentData) {
+      Alert.alert('Error', 'Registration data not found. Please try again.');
+      return;
+    }
+
+    try {
+      // Complete registration in database
+      const result = await completeRegistration(
+        pendingStudentData.studentId,
+        pendingStudentData.email,
+        pendingStudentData.password
+      );
+
+      if (result.success) {
+        setShowVerificationModal(false);
+        setPendingStudentData(null);
+        
+        // Clear form
+        setFirstName('');
+        setMiddleName('');
+        setLastName('');
+        setSuffix('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        
+        // Navigate to login
+        setTimeout(() => {
+          Alert.alert('Success!', result.message, [
+            { text: 'Login Now', onPress: () => router.push('/login' as any) }
+          ]);
+        }, 500);
+      } else {
+        Alert.alert('Error', result.message);
+      }
+    } catch (error: any) {
+      console.error('Registration completion error:', error);
+      Alert.alert('Error', 'Failed to complete registration. Please try again.');
+    }
+  };
+
   const handleRegister = async () => {
     // Validate inputs first
     const validation = validateRegistrationInputs(firstName, middleName, lastName, suffix, email, password, confirmPassword);
@@ -185,14 +261,40 @@ export default function RegisterScreen() {
       return;
     }
 
+    // Check for email error
+    if (emailError) {
+      Alert.alert('Invalid Email', 'Please fix the email address before continuing.');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      // Create user account with student validation
+      // Validate student information and check eligibility
       const result = await createUserAccount(firstName, middleName, lastName, suffix, email, password);
       
-      if (result.success) {
-        Alert.alert('Success', 'Account created successfully! You can now login.', [
+      if (result.success && result.pendingVerification) {
+        // Student validated, now send verification email
+        const emailResult = await sendVerificationEmail(
+          email,
+          `${firstName} ${lastName}`
+        );
+
+        if (emailResult.success) {
+          // Store pending data and show verification modal
+          setPendingStudentData(result.studentData);
+          setShowVerificationModal(true);
+          
+          // Show verification code in console for development
+          if (emailResult.code) {
+            console.log(`[DEV] Verification code sent: ${emailResult.code}`);
+          }
+        } else {
+          Alert.alert('Error', emailResult.message);
+        }
+      } else if (result.success) {
+        // Registration completed without verification (shouldn't happen with new flow)
+        Alert.alert('Success', result.message, [
           { text: 'OK', onPress: () => router.push('/login' as any) }
         ]);
       } else {
@@ -421,18 +523,45 @@ export default function RegisterScreen() {
                   <TextInput
                     style={[
                       loginStyles.input,
-                      focusedInput === 'email' && loginStyles.inputFocused
+                      focusedInput === 'email' && loginStyles.inputFocused,
+                      emailError && { borderColor: '#ef4444', borderWidth: 2 }
                     ]}
                     value={email}
-                    onChangeText={setEmail}
+                    onChangeText={(text) => {
+                      setEmail(text);
+                      setEmailError(null); // Clear error when user starts typing
+                    }}
                     placeholder="Email Address *"
                     placeholderTextColor="#999"
                     autoCapitalize="none"
                     autoCorrect={false}
                     keyboardType="email-address"
                     onFocus={() => setFocusedInput('email')}
-                    onBlur={() => setFocusedInput(null)}
+                    onBlur={() => {
+                      setFocusedInput(null);
+                      handleEmailValidation(); // Validate when user leaves the field
+                    }}
                   />
+                  {emailValidating && (
+                    <Text style={{
+                      color: '#9ca3af',
+                      fontSize: 12,
+                      marginTop: 4,
+                      marginLeft: 4,
+                    }}>
+                      Validating email...
+                    </Text>
+                  )}
+                  {emailError && (
+                    <Text style={{
+                      color: '#ef4444',
+                      fontSize: 12,
+                      marginTop: 4,
+                      marginLeft: 4,
+                    }}>
+                      {emailError}
+                    </Text>
+                  )}
                 </View>
 
                 <View style={loginStyles.inputContainer}>
@@ -585,6 +714,31 @@ export default function RegisterScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Registration Verification Modal */}
+      <RegistrationVerificationModal
+        visible={showVerificationModal}
+        onClose={() => {
+          Alert.alert(
+            'Cancel Registration?',
+            'Are you sure you want to cancel? You will need to start over.',
+            [
+              { text: 'Continue Verification', style: 'cancel' },
+              {
+                text: 'Cancel',
+                style: 'destructive',
+                onPress: () => {
+                  setShowVerificationModal(false);
+                  setPendingStudentData(null);
+                }
+              }
+            ]
+          );
+        }}
+        email={email}
+        userName={`${firstName} ${lastName}`}
+        onVerificationSuccess={handleVerificationSuccess}
+      />
     </SafeAreaView>
   );
 }

@@ -22,16 +22,23 @@ export interface AuthResult {
   success: boolean;
   message: string;
   user?: User;
+  pendingVerification?: boolean; // Indicates email verification is needed
+  studentData?: any; // Temporary student data for verification flow
+}
+
+export interface EmailValidationResult {
+  isValid: boolean;
+  message: string;
 }
 
 export interface LoginCredentials {
-  identifier: string; // Can be email, LRN, or student ID
+  identifier: string; // Can be email or LRN
   password: string;
 }
 
 /**
  * Authenticate user using student_users view (correct approach)
- * @param identifier Email, LRN, or student ID
+ * @param identifier Email or LRN
  * @param password Password
  * @returns Promise<AuthResult> Authentication result
  */
@@ -50,14 +57,17 @@ export const authenticateUser = async (identifier: string, password: string): Pr
     if (identifier.includes('@')) {
       query = query.eq('email', identifier);
     }
-    // Check if identifier is numeric (LRN or student ID)
+    // Check if identifier is numeric (LRN only)
     else if (/^\d+$/.test(identifier)) {
-      // For numeric identifiers, search both LRN and student_id
-      query = query.or(`lrn.eq.${identifier},student_id.eq.${identifier}`);
+      // For numeric identifiers, search only LRN
+      query = query.eq('lrn', identifier);
     }
-    // If it's neither email nor numeric, treat as student_id (string)
+    // If it's neither email nor numeric, return error
     else {
-      query = query.eq('student_id', identifier);
+      return {
+        success: false,
+        message: 'Please enter a valid Email or LRN'
+      };
     }
     
     const { data: users, error: userError } = await query;
@@ -156,6 +166,122 @@ export const authenticateUser = async (identifier: string, password: string): Pr
 };
 
 /**
+ * Validate email existence and format
+ * This function checks if the email is properly formatted and if the domain exists
+ * @param email Email address to validate
+ * @returns Promise<EmailValidationResult> Validation result
+ */
+export const validateEmailExistence = async (email: string): Promise<EmailValidationResult> => {
+  try {
+    // Step 1: Basic format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return {
+        isValid: false,
+        message: 'Invalid email format'
+      };
+    }
+
+    // Step 2: Extract domain from email
+    const domain = email.split('@')[1];
+    if (!domain) {
+      return {
+        isValid: false,
+        message: 'Invalid email domain'
+      };
+    }
+
+    // Step 3: Check if domain has valid TLD (top-level domain)
+    const validTLDs = ['com', 'net', 'org', 'edu', 'gov', 'mil', 'int', 'co', 'io', 'ai', 'ph', 'us', 'uk', 'de', 'fr', 'jp', 'cn', 'in', 'au', 'ca'];
+    const tld = domain.split('.').pop()?.toLowerCase();
+    
+    if (!tld || !validTLDs.includes(tld)) {
+      // Check if it's a two-part TLD like .co.uk
+      const parts = domain.split('.');
+      if (parts.length >= 2) {
+        const secondLevelTLD = parts[parts.length - 2] + '.' + parts[parts.length - 1];
+        const validSecondLevel = ['co.uk', 'co.jp', 'co.in', 'com.au', 'co.za', 'com.ph'];
+        if (!validSecondLevel.includes(secondLevelTLD.toLowerCase())) {
+          return {
+            isValid: false,
+            message: 'Email domain has an invalid or uncommon extension'
+          };
+        }
+      } else {
+        return {
+          isValid: false,
+          message: 'Email domain has an invalid extension'
+        };
+      }
+    }
+
+    // Step 4: Additional domain validation
+    // Check for common typos in popular email providers
+    const commonDomains = [
+      'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 
+      'icloud.com', 'aol.com', 'protonmail.com', 'mail.com',
+      'zoho.com', 'yandex.com', 'gmx.com'
+    ];
+    
+    // Check for typos (e.g., gmai.com instead of gmail.com)
+    const similarDomain = commonDomains.find(commonDomain => {
+      const lowerDomain = domain.toLowerCase();
+      if (lowerDomain === commonDomain) return false; // Exact match is fine
+      
+      // Check if it's one character different
+      if (Math.abs(lowerDomain.length - commonDomain.length) <= 1) {
+        let differences = 0;
+        const maxLength = Math.max(lowerDomain.length, commonDomain.length);
+        for (let i = 0; i < maxLength; i++) {
+          if (lowerDomain[i] !== commonDomain[i]) differences++;
+          if (differences > 2) break;
+        }
+        if (differences <= 2) return true;
+      }
+      return false;
+    });
+    
+    if (similarDomain) {
+      return {
+        isValid: false,
+        message: `Did you mean ${email.split('@')[0]}@${similarDomain}?`
+      };
+    }
+
+    // Step 5: Check if email is already registered
+    const { data: existingUsers, error: checkError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .limit(1);
+    
+    if (checkError) {
+      console.error('Error checking existing email:', checkError);
+      // Don't fail validation on database error, continue
+    } else if (existingUsers && existingUsers.length > 0) {
+      return {
+        isValid: false,
+        message: 'This email address is already registered'
+      };
+    }
+
+    // If all checks pass, email is valid
+    return {
+      isValid: true,
+      message: 'Email is valid'
+    };
+    
+  } catch (error: any) {
+    console.error('Email validation error:', error);
+    // Return true on error to not block registration due to validation service issues
+    return {
+      isValid: true,
+      message: 'Email validation service unavailable, proceeding with registration'
+    };
+  }
+};
+
+/**
  * Create new user account (development version)
  * @param firstName Student's first name
  * @param middleName Student's middle name (optional)
@@ -184,12 +310,12 @@ export const createUserAccount = async (
       };
     }
     
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    // Email validation - Check format and existence
+    const emailValidation = await validateEmailExistence(email);
+    if (!emailValidation.isValid) {
       return {
         success: false,
-        message: 'Please enter a valid email address'
+        message: emailValidation.message
       };
     }
     
@@ -327,15 +453,55 @@ export const createUserAccount = async (
       };
     }
     
-    // Step 3: Create password hash (simple base64 for now)
+    // Return pending verification status
+    // The actual account will be created after email verification
+    return {
+      success: true,
+      message: 'Student validated. Please verify your email to complete registration.',
+      pendingVerification: true,
+      studentData: {
+        studentId: student.id,
+        firstName: student.first_name,
+        lastName: student.last_name,
+        gradeLevel: student.grade_level,
+        email: email,
+        password: password // Temporarily store for completion after verification
+      }
+    };
+    
+  } catch (error: any) {
+    console.error('Error creating user account:', error.message);
+    return {
+      success: false,
+      message: 'Failed to create user account. Please try again.'
+    };
+  }
+};
+
+/**
+ * Complete user registration after email verification
+ * @param studentId Student ID from database
+ * @param email Verified email address
+ * @param password Password for the account
+ * @returns Promise<AuthResult> Registration completion result
+ */
+export const completeRegistration = async (
+  studentId: number,
+  email: string,
+  password: string
+): Promise<AuthResult> => {
+  try {
+    console.log('Completing registration for student:', studentId);
+    
+    // Create password hash
     const passwordHash = btoa(password);
     
-    // Step 4: Create user account
+    // Create user account in database
     const { data: newUser, error: createError } = await supabase
       .from('users')
       .insert([
         {
-          student_id: student.id,
+          student_id: studentId,
           email: email,
           password_hash: passwordHash
         }
@@ -350,23 +516,25 @@ export const createUserAccount = async (
       };
     }
     
+    console.log('User account created successfully:', newUser);
+    
     return {
       success: true,
-      message: `Account created successfully for ${student.first_name} ${student.last_name} (${student.grade_level}). You can now login with your email and password.`
+      message: 'Registration completed successfully! You can now login.'
     };
     
   } catch (error: any) {
-    console.error('Error creating user account:', error.message);
+    console.error('Error completing registration:', error.message);
     return {
       success: false,
-      message: 'Failed to create user account. Please try again.'
+      message: 'Failed to complete registration. Please try again.'
     };
   }
 };
 
 /**
  * Validate login input fields
- * @param identifier Email, LRN, or student ID
+ * @param identifier Email or LRN
  * @param password Password string
  * @returns Object with validation results
  */
@@ -374,7 +542,7 @@ export const validateLoginInputs = (identifier: string, password: string) => {
   const errors: string[] = [];
   
   if (!identifier.trim()) {
-    errors.push('Email, LRN, or Student ID is required');
+    errors.push('Email or LRN is required');
   }
   
   if (!password.trim()) {

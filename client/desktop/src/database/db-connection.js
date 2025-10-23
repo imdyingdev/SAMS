@@ -1,6 +1,11 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+
+// Suppress dotenv verbose output
+const originalLog = console.log;
+console.log = () => {};
 dotenv.config();
+console.log = originalLog;
 
 // Conditionally apply SSL configuration
 const isProduction = process.env.NODE_ENV === 'production';
@@ -23,26 +28,17 @@ const pool = new Pool(poolConfig);
 async function testConnection(retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
-      console.log(`Testing database connection (attempt ${i + 1}/${retries})...`);
-      
       const client = await pool.connect();
       
       // Test with a simple query
       const result = await client.query('SELECT NOW() as current_time, version() as pg_version');
-      console.log('Database connected successfully!');
-      console.log('Current time:', result.rows[0].current_time);
-      console.log('PostgreSQL version:', result.rows[0].pg_version.split(' ')[0]);
+      console.log('[DATABASE] Connection established');
       
       client.release();
       return true;
     } catch (error) {
-      console.error(`Connection attempt ${i + 1} failed:`, error.message);
-      
       if (i === retries - 1) {
-        console.error('All connection attempts failed. Please check:');
-        console.error('1. Your internet connection');
-        console.error('2. Database credentials in .env file');
-        console.error('3. Supabase database status');
+        console.error('[DATABASE] Connection failed -', error.message);
         return false;
       }
       
@@ -61,14 +57,6 @@ async function query(text, params) {
   try {
     client = await pool.connect();
     const result = await client.query(text, params);
-    const duration = Date.now() - start;
-    
-    console.log('Query executed successfully', { 
-      duration: `${duration}ms`, 
-      rows: result.rowCount,
-      command: text.split(' ')[0]
-    });
-    
     return result;
   } catch (error) {
     console.error('Query error:', error.message);
@@ -82,18 +70,13 @@ async function query(text, params) {
   }
 }
 
-// Enhanced graceful shutdown
+// Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('🔄 Closing database pool...');
-  pool.end(() => {
-    console.log('Database pool closed');
-  });
+  pool.end();
 });
 
 process.on('SIGINT', () => {
-  console.log('🔄 Closing database pool...');
   pool.end(() => {
-    console.log('Database pool closed');
     process.exit(0);
   });
 });

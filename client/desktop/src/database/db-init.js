@@ -72,23 +72,32 @@ async function initializeTables() {
           created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
         )
       `
+    },
+    {
+      name: 'announcements',
+      query: `
+        CREATE TABLE IF NOT EXISTS announcements (
+          id SERIAL PRIMARY KEY,
+          title VARCHAR(255) NOT NULL,
+          content TEXT NOT NULL,
+          created_by INTEGER REFERENCES admin_users(id),
+          created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+          updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+        )
+      `
     }
   ];
 
   try {
-    console.log('Initializing database tables...');
-    
     for (const table of tables) {
       try {
         await query(table.query);
-        console.log(`Table '${table.name}' initialized successfully`);
       } catch (error) {
-        console.error(`Error creating table '${table.name}':`, error.message);
+        console.error(`[DATABASE] Error creating table '${table.name}':`, error.message);
         throw error;
       }
     }
     
-    console.log('All database tables initialized successfully');
     return true;
   } catch (error) {
     console.error('Error initializing tables:', error.message);

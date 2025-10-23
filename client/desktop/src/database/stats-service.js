@@ -3,7 +3,6 @@ import { query } from './db-connection.js';
 // Get student statistics by grade level for charts
 async function getStudentStatsByGrade() {
   try {
-    console.log('📊 Fetching student statistics by grade level...');
     
     const result = await query(`
       SELECT 
@@ -62,8 +61,6 @@ async function getStudentStatsByGrade() {
     // Convert to array format for chart
     const chartData = gradeOrder.map(grade => statsMap[grade]);
     
-    console.log(`✅ Retrieved student statistics:`, statsMap);
-    console.log(`📊 Raw database results:`, result.rows);
     return {
       labels: gradeOrder,
       data: chartData,
@@ -71,7 +68,7 @@ async function getStudentStatsByGrade() {
     };
     
   } catch (error) {
-    console.error('🔥 Error fetching student statistics:', error);
+    console.error('[STATS] Error: fetching student statistics:', error);
     throw new Error(`Failed to fetch student statistics: ${error.message}`);
   }
 }
@@ -79,7 +76,6 @@ async function getStudentStatsByGrade() {
 // Get student statistics by gender for charts
 async function getStudentStatsByGender() {
   try {
-    console.log('📊 Fetching student statistics by gender...');
     
     const result = await query(`
       SELECT 
@@ -110,8 +106,6 @@ async function getStudentStatsByGender() {
       { value: genderStats['Female'], name: 'Female' }
     ];
     
-    console.log(`✅ Retrieved gender statistics:`, genderStats);
-    console.log(`📊 Raw database results:`, result.rows);
     return {
       data: chartData,
       totalStudents: genderStats['Male'] + genderStats['Female'],
@@ -120,7 +114,7 @@ async function getStudentStatsByGender() {
     };
     
   } catch (error) {
-    console.error('🔥 Error fetching gender statistics:', error);
+    console.error('[STATS] Error: fetching gender statistics:', error);
     throw new Error(`Failed to fetch gender statistics: ${error.message}`);
   }
 }

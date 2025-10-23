@@ -67,22 +67,20 @@ class EmailService {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Email Verification</title>
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
-            .container { background-color: #f9f9f9; border-radius: 8px; padding: 30px; text-align: center; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center; }
+            h1 { margin-bottom: 20px; }
             .code { font-size: 32px; font-weight: bold; color: #FF69B4; letter-spacing: 4px; margin: 20px 0; }
             .footer { margin-top: 30px; font-size: 14px; color: #666; }
           </style>
         </head>
         <body>
-          <div class="container">
-            <h1>Email Verification</h1>
-            <p>Please use the following verification code to complete your email change:</p>
-            <div class="code">${verificationCode}</div>
-            <p>This code will expire in 10 minutes.</p>
-            <p>If you didn't request this change, please ignore this email.</p>
-            <div class="footer">
-              <p>SAMS - Student Attendance Management System</p>
-            </div>
+          <h1>Email Verification</h1>
+          <p>Please use the following verification code to complete your registration:</p>
+          <div class="code">${verificationCode}</div>
+          <p>This code will expire in 10 minutes.</p>
+          <p>If you didn't request this change, please ignore this email.</p>
+          <div class="footer">
+            <p>SAMS - Student Attendance Management System</p>
           </div>
         </body>
       </html>

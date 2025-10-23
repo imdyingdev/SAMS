@@ -2,6 +2,9 @@
 import { initializeDashboard } from './dashboard.js';
 import { initializeStudentsPage, loadStudents, setupSearchAndFilter } from './students.js';
 import { initializeLogsPage, loadLogs, setupLogsSearchAndFilter } from './logs.js';
+import { initializeAnnouncementsPage, loadAnnouncements, setupAnnouncementsSearch } from './announcements.js';
+import { initializeDashboardAnnouncements, loadDashboardAnnouncements } from './dashboard-announcements.js';
+import { initializeDashboardAttendance, loadTodayAttendanceStats } from './dashboard-attendance.js';
 import { loadComponent } from './componentLoader.js';
 
 // View configurations
@@ -23,6 +26,12 @@ const views = {
         title: 'Activity Logs',
         init: initializeLogsView,
         cleanup: cleanupLogsView
+    },
+    announcements: {
+        template: '../view-components/announcements-view.html',
+        title: 'Announcements',
+        init: initializeAnnouncementsView,
+        cleanup: cleanupAnnouncementsView
     }
 };
 
@@ -158,6 +167,12 @@ async function initializeHomeView() {
     // Load calendar component
     await loadComponent('calendar', 'calendar-container');
     
+    // Initialize dashboard announcements
+    initializeDashboardAnnouncements();
+    
+    // Initialize dashboard attendance
+    initializeDashboardAttendance();
+    
     // Initialize charts with delay to ensure DOM is ready
     setTimeout(() => {
         if (typeof window.initializeStudentChart === 'function') {
@@ -169,7 +184,14 @@ async function initializeHomeView() {
         if (typeof window.initDailyAttendanceChart === 'function') {
             window.initDailyAttendanceChart();
         }
-    }, 100);
+        
+        // Load dashboard announcements
+        loadDashboardAnnouncements();
+        
+        // Load today's attendance stats
+        console.log('Explicitly loading today\'s attendance stats...');
+        loadTodayAttendanceStats();
+    }, 300); // Increased timeout to ensure DOM is fully ready
 }
 
 async function initializeStudentsView() {
@@ -195,6 +217,19 @@ async function initializeLogsView() {
     // Add a small delay to ensure DOM is ready and visibility states are set
     setTimeout(() => {
         loadLogs();
+    }, 50);
+}
+
+async function initializeAnnouncementsView() {
+    console.log('📢 Initializing announcements view...');
+    
+    // Initialize announcements page functionality
+    initializeAnnouncementsPage();
+    setupAnnouncementsSearch();
+    
+    // Add a small delay to ensure DOM is ready and visibility states are set
+    setTimeout(() => {
+        loadAnnouncements();
     }, 50);
 }
 
@@ -245,6 +280,15 @@ function cleanupStudentsView() {
 function cleanupLogsView() {
     console.log('🧹 Cleaning up logs view...');
     // No search input to cleanup since we removed it
+}
+
+function cleanupAnnouncementsView() {
+    console.log('🧹 Cleaning up announcements view...');
+    // Clean up announcements-specific functionality
+    const searchInput = document.getElementById('announcement-search');
+    if (searchInput) {
+        searchInput.value = '';
+    }
 }
 
 // Helper function for student search (if needed)

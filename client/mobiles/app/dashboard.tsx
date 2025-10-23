@@ -36,6 +36,7 @@ export default function DashboardScreen() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [fabSelectedTab, setFabSelectedTab] = useState(0);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const fontsLoaded = useFonts();
 
@@ -91,12 +92,14 @@ export default function DashboardScreen() {
     setSelectedTab(0);
     setFabSelectedTab(0);
     setShowSettings(false);
+    setSelectedDate(null); // Reset date filter when returning to home
   };
 
   const handleListPress = () => {
     setSelectedTab(1);
     setFabSelectedTab(1);
     setShowSettings(false);
+    setSelectedDate(null); // Reset date filter when going to Activity Log
   };
 
   const handleSettingsPress = () => {
@@ -151,7 +154,10 @@ export default function DashboardScreen() {
           {/* Calendar - shown only on home tab */}
           {selectedTab === 0 && (
             <View style={{width: '100%', alignSelf: 'center', paddingHorizontal: Spacing.lg}}>
-              <CalendarScreen />
+              <CalendarScreen 
+                onDateSelect={(date) => setSelectedDate(date)}
+                selectedDate={selectedDate || undefined}
+              />
             </View>
           )}
 
@@ -169,6 +175,8 @@ export default function DashboardScreen() {
             onRefresh={onRefresh}
             loading={false}
             studentRfid={user?.rfid} // Pass user's RFID for filtering
+            selectedDate={selectedTab === 0 ? selectedDate : null} // Only filter by date on home tab
+            showAllRecords={selectedTab === 1} // Show all records on Activity Log tab
           />
         </>
       )}

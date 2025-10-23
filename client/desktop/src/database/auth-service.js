@@ -3,7 +3,18 @@ import { query } from './db-connection.js';
 // Login function with better error handling
 async function authenticateUser(username, password) {
   try {
-    console.log(`Authenticating user: ${username}`);
+    
+    // First, check if ANY admin users exist in the database
+    const adminCountQuery = `SELECT COUNT(*) as count FROM admin_users WHERE is_active = true`;
+    const countResult = await query(adminCountQuery);
+    const adminCount = parseInt(countResult.rows[0].count);
+    
+    // If no admin users exist, auto-regenerate the default admin
+    if (adminCount === 0) {
+      console.warn('[AUTH] No admin users found - auto-regenerating default admin');
+      await createDefaultAdmin();
+      console.log('[AUTH] Default admin user regenerated');
+    }
     
     // Query to find user by username
     const userQuery = `
@@ -15,7 +26,6 @@ async function authenticateUser(username, password) {
     const result = await query(userQuery, [username]);
     
     if (result.rows.length === 0) {
-      console.log('User not found or inactive');
       return {
         success: false,
         message: 'Invalid username or password'
@@ -23,14 +33,12 @@ async function authenticateUser(username, password) {
     }
     
     const user = result.rows[0];
-    console.log(`User found: ${user.username} (${user.role})`);
     
     // Check password
     const bcrypt = await import('bcrypt');
     const isPasswordValid = await bcrypt.default.compare(password, user.password_hash);
     
     if (!isPasswordValid) {
-      console.log('Invalid password');
       await logLoginAttempt(user.id, false);
       return {
         success: false,
@@ -40,7 +48,6 @@ async function authenticateUser(username, password) {
     
     // Log successful login
     await logLoginAttempt(user.id, true);
-    console.log('Authentication successful');
     
     return {
       success: true,
@@ -70,40 +77,45 @@ async function logLoginAttempt(userId, success) {
     `;
     
     await query(logQuery, [userId, success, 'localhost']);
-    console.log(`Login attempt logged for user ${userId}: ${success ? 'SUCCESS' : 'FAILED'}`);
   } catch (error) {
-    console.error('Error logging login attempt:', error.message);
+    // Silent fail for login logging
   }
 }
 
 // Create a default admin user (for initial setup)
 async function createDefaultAdmin() {
   try {
-    console.log('Creating default admin user...');
     
+    // First check if admin already exists
+    const checkQuery = `SELECT id FROM admin_users WHERE username = $1`;
+    const existing = await query(checkQuery, ['admin']);
+    
+    if (existing.rows.length > 0) {
+      console.log('[AUTH] Default admin user already exists');
+      return true;
+    }
+    
+    // Create new admin if it doesn't exist
     const bcrypt = await import('bcrypt');
     const defaultPassword = 'admin123';
     const hashedPassword = await bcrypt.default.hash(defaultPassword, 10);
     
     const result = await query(`
-      INSERT INTO admin_users (username, password_hash, role)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash
+      INSERT INTO admin_users (username, password_hash, role, is_active)
+      VALUES ($1, $2, $3, $4)
       RETURNING id
-    `, ['admin', hashedPassword, 'admin']);
+    `, ['admin', hashedPassword, 'admin', true]);
     
     if (result.rows.length > 0) {
-      console.log('Default admin user created successfully');
-      console.log('   Username: admin');
-      console.log('   Password: admin123');
-      console.log('    IMPORTANT: Change this password in production!');
-    } else {
-      console.log('Default admin user already exists');
+      console.log('[AUTH] Default admin user created successfully');
+      console.log('[AUTH] Username: admin');
+      console.log('[AUTH] Password: admin123');
+      console.log('[AUTH] IMPORTANT: Change this password in production!');
     }
     
     return true;
   } catch (error) {
-    console.error(' Error creating default admin:', error.message);
+    console.error('[AUTH] Error creating default admin:', error.message);
     return false;
   }
 }

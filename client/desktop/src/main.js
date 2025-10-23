@@ -7,6 +7,8 @@ import { initializeTables } from './database/db-init.js';
 import { saveStudent, getAllStudents, getStudentsPaginated, deleteStudent, updateStudent, getStudentById } from './database/student-service.js';
 import { getStudentStatsByGrade, getStudentStatsByGender } from './database/stats-service.js';
 import { getLogsPaginated, getRecentLogs, createLogEntry, logRfidActivity, logStudentActivity, logAuthActivity } from './database/logs-service.js';
+import { createAnnouncement, getAllAnnouncements, getAnnouncementsCount, getAnnouncementById, updateAnnouncement, deleteAnnouncement, searchAnnouncements } from './database/announcement-service.js';
+import { getTodayAttendanceStats } from './database/attendance-stats-service.js';
 import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
 import { fileURLToPath } from 'url';
@@ -16,14 +18,9 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Enable live reload for Electron in development
+// Development mode
 if (process.env.NODE_ENV === 'development') {
-  try {
-    // Skip electron-reload in ES6 modules due to compatibility issues
-    console.log('Development mode: electron-reload disabled for ES6 compatibility');
-  } catch (error) {
-    console.error('Error setting up electron-reload:', error);
-  }
+  // electron-reload disabled for ES6 compatibility
 }
 
 // RFID Scanner variables
@@ -47,32 +44,11 @@ app.commandLine.appendSwitch('enable-unsafe-webgpu'); // Sometimes needed
  * Create the main application window
  */
 async function createWindow() {
-  console.log('Starting AMPID Attendance System...');
-  console.log('__dirname:', __dirname);
-  console.log('process.cwd():', process.cwd());
-  
-  // Check if HTML file exists BEFORE trying to load it
   const htmlPath = path.join(__dirname, '../public/views/index.html');
-  console.log('Looking for HTML at:', htmlPath);
-  console.log('HTML file exists:', fs.existsSync(htmlPath));
-  
-  // List contents of public directory
   const publicDir = path.join(__dirname, '../public');
-  console.log('Public directory path:', publicDir);
-  console.log('Public directory exists:', fs.existsSync(publicDir));
-  
-  if (fs.existsSync(publicDir)) {
-    console.log('Contents of public directory:');
-    try {
-      const files = fs.readdirSync(publicDir);
-      files.forEach(file => console.log('  -', file));
-    } catch (err) {
-      console.error('Error reading public directory:', err);
-    }
-  }
 
-  // Skip database initialization for now
-  // await initializeDatabase();
+  // Initialize database and ensure default admin exists
+  await initializeDatabase();
 
   // Create the browser window
   mainWindow = new BrowserWindow({
@@ -88,7 +64,7 @@ async function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, '..', 'dist', 'preload.js'),
+      preload: path.join(__dirname, 'preload.js'),
 
       
       // webSecurity: true,
@@ -100,18 +76,10 @@ async function createWindow() {
     },
   });
 
-  console.log('BrowserWindow created');
-
   try {
-    console.log('Attempting to load HTML file...');
     await mainWindow.loadFile(htmlPath);
-    console.log('HTML file loaded successfully');
   } catch (error) {
-    console.error('Failed to load HTML file:', error.message);
-    console.error('Error details:', error);
-    
-    // Create a simple test page
-    console.log('Loading fallback HTML...');
+    console.error('[APP] Failed to load HTML file:', error.message);
     const fallbackHtml = `
       <!DOCTYPE html>
       <html>
@@ -177,14 +145,12 @@ project/
     `;
     
     await mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fallbackHtml)}`);
-    console.log('Fallback HTML loaded');
   }
 
   // Show window when ready to prevent visual flash
   mainWindow.once('ready-to-show', () => {
-    console.log('ready-to-show event fired');
     mainWindow.show();
-    console.log('Application window shown');
+    console.log('[APP] SAMS Desktop started successfully');
     
     // Focus on window for better UX
     if (isDev) {
@@ -197,22 +163,45 @@ project/
   // Handle window closed
   mainWindow.on('closed', () => {
     mainWindow = null;
-    console.log('Main window closed');
   });
-
-  console.log(`Current NODE_ENV: ${process.env.NODE_ENV}`);
-  // Open DevTools automatically in development
-  // if (process.env.NODE_ENV === 'development') {
-  //   mainWindow.webContents.openDevTools();
-  // }
 
   // Handle external links
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     import('electron').then(({ shell }) => shell.openExternal(url));
     return { action: 'deny' };
   });
+}
 
-  console.log('Application window created successfully');
+/**
+ * Initialize database: test connection, create tables, ensure admin exists
+ */
+async function initializeDatabase() {
+  try {
+    console.log('[DATABASE] Initializing...');
+    
+    // Test database connection
+    const isConnected = await testConnection();
+    if (!isConnected) {
+      console.error('[DATABASE] Connection failed');
+      return false;
+    }
+    
+    // Initialize tables
+    const tablesCreated = await initializeTables();
+    if (!tablesCreated) {
+      console.error('[DATABASE] Failed to initialize tables');
+      return false;
+    }
+    
+    // Create default admin user
+    await createDefaultAdmin();
+    
+    console.log('[DATABASE] Initialization complete');
+    return true;
+  } catch (error) {
+    console.error('[DATABASE] Initialization error:', error.message);
+    return false;
+  }
 }
 
 // Handle window controls - Reset and clean implementation
@@ -258,15 +247,13 @@ ipcMain.on('close-app', () => {
  * Application event handlers
  */
 app.whenReady().then(() => {
-  console.log('App ready event fired');
-  
   // Set application menu (remove default menu in production)
   if (!isDev) {
     Menu.setApplicationMenu(null);
   }
   
   createWindow().catch(error => {
-    console.error('Failed to create window:', error);
+    console.error('[APP] Failed to create window:', error);
   });
 
   // macOS specific: Re-create window when dock icon is clicked
@@ -277,7 +264,6 @@ app.whenReady().then(() => {
   });
 });
 
-// Quit when all windows are closed (except on macOS)
 // Gracefully close serial port on app quit
 app.on('before-quit', () => {
   if (port && port.isOpen) {
@@ -286,7 +272,6 @@ app.on('before-quit', () => {
 });
 
 app.on('window-all-closed', () => {
-  console.log('All windows closed');
   if (process.platform !== 'darwin') {
     app.quit();
   }
@@ -603,4 +588,104 @@ ipcMain.handle('create-log-entry', async (event, logType, description, rfid = nu
   }
 });
 
-console.log('Main.js loaded successfully');
+// === ANNOUNCEMENTS IPC HANDLERS ===
+
+// Create announcement handler
+ipcMain.handle('create-announcement', async (event, announcementData) => {
+  try {
+    console.log('IPC: Creating announcement');
+    const result = await createAnnouncement(announcementData);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to create announcement:', error);
+    throw error;
+  }
+});
+
+// Get all announcements handler
+ipcMain.handle('get-all-announcements', async (event, limit = 50, offset = 0) => {
+  try {
+    console.log(`IPC: Fetching announcements (limit: ${limit}, offset: ${offset})`);
+    const result = await getAllAnnouncements(limit, offset);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to get announcements:', error);
+    throw error;
+  }
+});
+
+// Get announcements count handler
+ipcMain.handle('get-announcements-count', async (event) => {
+  try {
+    console.log('IPC: Fetching announcements count');
+    const result = await getAnnouncementsCount();
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to get announcements count:', error);
+    throw error;
+  }
+});
+
+// Get announcement by ID handler
+ipcMain.handle('get-announcement-by-id', async (event, id) => {
+  try {
+    console.log(`IPC: Fetching announcement with ID: ${id}`);
+    const result = await getAnnouncementById(id);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to get announcement by ID:', error);
+    throw error;
+  }
+});
+
+// Update announcement handler
+ipcMain.handle('update-announcement', async (event, { id, announcementData }) => {
+  try {
+    console.log(`IPC: Updating announcement with ID: ${id}`);
+    const result = await updateAnnouncement(id, announcementData);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to update announcement:', error);
+    throw error;
+  }
+});
+
+// Delete announcement handler
+ipcMain.handle('delete-announcement', async (event, id) => {
+  try {
+    console.log(`IPC: Deleting announcement with ID: ${id}`);
+    const result = await deleteAnnouncement(id);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to delete announcement:', error);
+    throw error;
+  }
+});
+
+// Search announcements handler
+ipcMain.handle('search-announcements', async (event, searchTerm, limit = 50, offset = 0) => {
+  try {
+    console.log(`IPC: Searching announcements with term: ${searchTerm}`);
+    const result = await searchAnnouncements(searchTerm, limit, offset);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to search announcements:', error);
+    throw error;
+  }
+});
+
+// === ATTENDANCE STATISTICS IPC HANDLERS ===
+
+// Get today's attendance statistics handler
+ipcMain.handle('get-today-attendance-stats', async (event) => {
+  try {
+    console.log('IPC: Fetching today\'s attendance statistics');
+    const result = await getTodayAttendanceStats();
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to get today\'s attendance statistics:', error);
+    throw error;
+  }
+});
+
+// Main process initialized

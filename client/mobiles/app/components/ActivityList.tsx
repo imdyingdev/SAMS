@@ -36,9 +36,11 @@ interface ActivityListProps {
   onRefresh: () => void;
   loading?: boolean;
   studentRfid?: string; // Optional filter by specific student RFID
+  selectedDate?: Date | null; // Optional filter by specific date
+  showAllRecords?: boolean; // If true, show all records (Activity Log mode)
 }
 
-const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, loading = false, studentRfid }) => {
+const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, loading = false, studentRfid, selectedDate, showAllRecords = false }) => {
   const [activityData, setActivityData] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(loading);
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +90,7 @@ const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, load
         .from('rfid_logs')
         .select('id, rfid, tap_type, timestamp, created_at')
         .order('timestamp', { ascending: false })
-        .limit(50); // Limit to recent 50 records
+        .limit(showAllRecords ? 100 : 50); // More records for Activity Log
 
       // Filter by specific student RFID if provided
       if (studentRfid) {
@@ -149,7 +151,23 @@ const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, load
         };
       });
 
-      const formattedData = transformActivityData(transformedData);
+      let formattedData = transformActivityData(transformedData);
+      
+      // Filter by selected date if provided (only in home/dashboard mode)
+      if (selectedDate && !showAllRecords) {
+        // Use local date comparison to avoid timezone issues
+        const selectedYear = selectedDate.getFullYear();
+        const selectedMonth = selectedDate.getMonth();
+        const selectedDay = selectedDate.getDate();
+        
+        formattedData = formattedData.filter(item => {
+          const itemDate = new Date(item.timestamp);
+          return itemDate.getFullYear() === selectedYear &&
+                 itemDate.getMonth() === selectedMonth &&
+                 itemDate.getDate() === selectedDay;
+        });
+      }
+      
       setActivityData(formattedData);
     } catch (err) {
       console.error('Error fetching activity data:', err);
@@ -159,13 +177,13 @@ const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, load
     } finally {
       setIsLoading(false);
     }
-  }, [studentRfid]); // Add dependency array for useCallback
+  }, [studentRfid, selectedDate, showAllRecords]); // Add dependency array for useCallback
 
-  // Load data on component mount and when studentRfid changes
+  // Load data on component mount and when studentRfid or selectedDate changes
   useEffect(() => {
     setIsLoading(true);
     fetchActivityData();
-  }, [studentRfid]);
+  }, [studentRfid, selectedDate, showAllRecords]);
 
   // Set up real-time subscription for rfid_logs
   useEffect(() => {
@@ -324,7 +342,41 @@ const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, load
         )}
         {activityData.length === 0 && !error && !isLoading && (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No activity records found</Text>
+            {selectedDate && !showAllRecords ? (
+              <>
+                {/* Check if selected date is a weekend */}
+                {(selectedDate.getDay() === 0 || selectedDate.getDay() === 6) ? (
+                  <Text style={styles.emptyText}>
+                    There is no class or event on this {selectedDate.getDay() === 0 ? 'Sunday' : 'Saturday'}.
+                  </Text>
+                ) : (
+                  <>
+                    {/* Check if selected date is in the future */}
+                    {selectedDate > new Date() ? (
+                      <Text style={styles.emptyText}>
+                        Attendance records will be available after {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}.
+                      </Text>
+                    ) : (
+                      <>
+                        {/* Check if selected date is today */}
+                        {selectedDate.toDateString() === new Date().toDateString() ? (
+                          <Text style={styles.emptyText}>
+                            Our records show that you were not present at school today{'\n'}
+                            {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}.
+                          </Text>
+                        ) : (
+                          <Text style={styles.emptyText}>
+                            Our records show that you were not present at school on {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}.
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              <Text style={styles.emptyText}>No activity records found</Text>
+            )}
           </View>
         )}
         {activityData.map((item, index) => {

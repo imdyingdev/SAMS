@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, Animated } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { BorderRadius, Colors } from '../styles/colors';
+import { supabase } from '../services/supabase';
+import { getUserSession } from '../utils/auth';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface CalendarEvent {
   date: string; // Format: 'YYYY-MM-DD'
@@ -15,6 +18,15 @@ interface ActivityItem {
   time: string;
   dayOfWeek: string;
   status: string;
+}
+
+interface RfidLog {
+  id: string;
+  rfid: string;
+  tap_count: number;
+  tap_type: string;
+  timestamp: string;
+  created_at: string;
 }
 
 interface CalendarProps {
@@ -38,10 +50,99 @@ const Calendar: React.FC<CalendarProps> = ({
   const [selected, setSelected] = useState<Date | null>(selectedDate || null);
   const [tooltip, setTooltip] = useState<{ visible: boolean; text: string; x: number; y: number }>({ visible: false, text: '', x: 0, y: 0 });
   const [calendarWidth, setCalendarWidth] = useState(0);
+  const [attendanceLogs, setAttendanceLogs] = useState<RfidLog[]>([]);
+  const [userRfid, setUserRfid] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const realtimeChannel = useRef<RealtimeChannel | null>(null);
 
   // Animation values
   const translateY = useRef(new Animated.Value(20)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+
+  // Fetch user session and RFID
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const user = await getUserSession();
+        if (user && user.rfid) {
+          setUserRfid(user.rfid);
+        } else {
+          console.warn('User RFID not found in session');
+        }
+      } catch (error) {
+        console.error('Error fetching user session:', error);
+      }
+    };
+    fetchUserData();
+  }, []);
+
+  // Fetch attendance logs from rfid_logs table
+  useEffect(() => {
+    if (!userRfid) return;
+
+    const fetchAttendanceLogs = async () => {
+      try {
+        setIsLoading(true);
+        const { data, error } = await supabase
+          .from('rfid_logs')
+          .select('*')
+          .eq('rfid', userRfid)
+          .order('timestamp', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching attendance logs:', error);
+          return;
+        }
+
+        setAttendanceLogs(data || []);
+      } catch (error) {
+        console.error('Error fetching attendance logs:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAttendanceLogs();
+  }, [userRfid]);
+
+  // Setup realtime subscription for attendance updates
+  useEffect(() => {
+    if (!userRfid) return;
+
+    // Subscribe to realtime changes
+    realtimeChannel.current = supabase
+      .channel('rfid_logs_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'rfid_logs',
+          filter: `rfid=eq.${userRfid}`
+        },
+        (payload) => {
+          console.log('Realtime update:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setAttendanceLogs((prev) => [payload.new as RfidLog, ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setAttendanceLogs((prev) =>
+              prev.map((log) => (log.id === payload.new.id ? (payload.new as RfidLog) : log))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setAttendanceLogs((prev) => prev.filter((log) => log.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (realtimeChannel.current) {
+        supabase.removeChannel(realtimeChannel.current);
+      }
+    };
+  }, [userRfid]);
 
   // Start animation when screen comes into focus
   useFocusEffect(
@@ -66,54 +167,49 @@ const Calendar: React.FC<CalendarProps> = ({
     }, [])
   );
 
-  // Sample activity data for calendar coloring
-  const sampleActivityData = [
-    { day: 1, month: 'OCT', time: '7:00 AM', dayOfWeek: 'Wednesday', status: 'Time In' },
-    { day: 1, month: 'OCT', time: '4:00 PM', dayOfWeek: 'Wednesday', status: 'Time Out' },
+  // Helper function to format date as key
+  const formatDateKey = (date: Date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
 
-    { day: 2, month: 'OCT', time: '7:00 AM', dayOfWeek: 'Thursday', status: 'Time In' },
-    { day: 2, month: 'OCT', time: '4:00 PM', dayOfWeek: 'Thursday', status: 'Time Out' },
+  // Process attendance logs to get attendance dates
+  const attendanceDates = React.useMemo(() => {
+    const dates = new Set<string>();
+    const logsWithTimes: { [key: string]: { timeIn?: string; timeOut?: string } } = {};
 
-    { day: 3, month: 'OCT', time: '7:00 AM', dayOfWeek: 'Friday', status: 'Time In' },
-    { day: 3, month: 'OCT', time: '4:00 PM', dayOfWeek: 'Friday', status: 'Time Out' },
-
-    { day: 6, month: 'OCT', time: '7:00 AM', dayOfWeek: 'Monday', status: 'Time In' },
-    { day: 6, month: 'OCT', time: '4:00 PM', dayOfWeek: 'Monday', status: 'Time Out' },
-
-    { day: 7, month: 'OCT', time: '7:00 AM', dayOfWeek: 'Tuesday', status: 'Time In' },
-    { day: 7, month: 'OCT', time: '4:00 PM', dayOfWeek: 'Tuesday', status: 'Time Out' },
-
-    { day: 8, month: 'OCT', time: '7:00 AM', dayOfWeek: 'Wednesday', status: 'Time In' },
-    { day: 8, month: 'OCT', time: '4:00 PM', dayOfWeek: 'Wednesday', status: 'Time Out' },
-
-    { day: 9, month: 'OCT', time: '7:00 AM', dayOfWeek: 'Thursday', status: 'Time In' },
-    { day: 9, month: 'OCT', time: '4:00 PM', dayOfWeek: 'Thursday', status: 'Time Out' },
-
-    { day: 10, month: 'OCT', time: '7:00 AM', dayOfWeek: 'Friday', status: 'Time In' },
-    { day: 10, month: 'OCT', time: '4:00 PM', dayOfWeek: 'Friday', status: 'Time Out' }
-  ];
-
-  // Generate events from activity data (use prop if provided, else sample)
-  const dataToUse = activityData || sampleActivityData;
-  const generatedEvents = React.useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const currentMonth = 10; // October
-    const currentDay = 12; // Assume current day is 12
-    const presentDays = new Set(dataToUse.map(item => item.day));
-
-    const events: CalendarEvent[] = [];
-    for (let day = 1; day < currentDay; day++) {
-      const date = new Date(currentYear, 9, day); // October is 9 (0-based)
-      if (date.getDay() === 0 || date.getDay() === 6) continue; // Skip weekends
-      const dateStr = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-      if (presentDays.has(day)) {
-        events.push({ date: dateStr, title: 'Present', color: '#4CAF50' }); // Green
-      } else {
-        events.push({ date: dateStr, title: 'Absent', color: '#f44336' }); // Red
+    attendanceLogs.forEach((log) => {
+      const logDate = new Date(log.timestamp);
+      const dateKey = formatDateKey(logDate);
+      
+      dates.add(dateKey);
+      
+      if (!logsWithTimes[dateKey]) {
+        logsWithTimes[dateKey] = {};
       }
-    }
-    return [...events, ...externalEvents];
-  }, [dataToUse, externalEvents]);
+      
+      const timeStr = logDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      
+      if (log.tap_type === 'time_in') {
+        logsWithTimes[dateKey].timeIn = timeStr;
+      } else if (log.tap_type === 'time_out') {
+        logsWithTimes[dateKey].timeOut = timeStr;
+      }
+    });
+
+    return { dates, logsWithTimes };
+  }, [attendanceLogs]);
+
+  // Check if a date has attendance
+  const hasAttendance = (date: Date): boolean => {
+    const dateKey = formatDateKey(date);
+    return attendanceDates.dates.has(dateKey);
+  };
+
+  // Get attendance times for a date
+  const getAttendanceTimes = (date: Date): { timeIn?: string; timeOut?: string } => {
+    const dateKey = formatDateKey(date);
+    return attendanceDates.logsWithTimes[dateKey] || {};
+  };
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -130,13 +226,9 @@ const Calendar: React.FC<CalendarProps> = ({
     return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
   };
 
-  const formatDateKey = (date: Date) => {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  };
-
   const getEventsForDate = (date: Date) => {
-    const dateKey = formatDateKey(date);
-    return generatedEvents.filter(event => event.date === dateKey);
+    // Not used anymore, but keeping for compatibility
+    return [];
   };
 
   const isDateDisabled = (date: Date) => {
@@ -161,21 +253,31 @@ const Calendar: React.FC<CalendarProps> = ({
     setSelected(newDate);
     onDateSelect?.(newDate);
 
-    // Show tooltip for past present dates
-    if (newDate < new Date() && dataToUse.some(item => item.day === day)) {
-      const activities = dataToUse.filter(item => item.day === day);
-      const times = activities.map(item => `${item.status}: ${item.time}`).join('\n');
-      // Calculate position
-      const firstDay = getFirstDayOfMonth(currentDate);
-      const index = firstDay + day - 1;
-      const row = Math.floor(index / 7);
-      const col = index % 7;
-      const cellWidth = calendarWidth / 7;
-      const cellHeight = cellWidth; // aspectRatio 1
-      const x = col * cellWidth;
-      const y = (row + 1) * cellHeight; // below the day
-      setTooltip({ visible: true, text: times, x, y });
-      setTimeout(() => setTooltip({ visible: false, text: '', x: 0, y: 0 }), 3000); // Hide after 3s
+    // Show tooltip for past dates with attendance
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(newDate);
+    selectedDate.setHours(0, 0, 0, 0);
+    
+    if (selectedDate <= today && hasAttendance(newDate)) {
+      const times = getAttendanceTimes(newDate);
+      const timeStrings = [];
+      if (times.timeIn) timeStrings.push(`Time In: ${times.timeIn}`);
+      if (times.timeOut) timeStrings.push(`Time Out: ${times.timeOut}`);
+      
+      if (timeStrings.length > 0) {
+        // Calculate position
+        const firstDay = getFirstDayOfMonth(currentDate);
+        const index = firstDay + day - 1;
+        const row = Math.floor(index / 7);
+        const col = index % 7;
+        const cellWidth = calendarWidth / 7;
+        const cellHeight = cellWidth; // aspectRatio 1
+        const x = col * cellWidth;
+        const y = (row + 1) * cellHeight; // below the day
+        setTooltip({ visible: true, text: timeStrings.join('\n'), x, y });
+        setTimeout(() => setTooltip({ visible: false, text: '', x: 0, y: 0 }), 3000); // Hide after 3s
+      }
     } else {
       setTooltip({ visible: false, text: '', x: 0, y: 0 });
     }
@@ -196,14 +298,40 @@ const Calendar: React.FC<CalendarProps> = ({
     }
 
     // Days of the month
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       const dateKey = formatDateKey(date);
       const isSelected = selected && formatDateKey(selected) === dateKey;
-      const isToday = formatDateKey(new Date()) === dateKey;
-      const dayEvents = getEventsForDate(date);
+      const isToday = formatDateKey(today) === dateKey;
       const disabled = isDateDisabled(date);
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      
+      // Normalize date for comparison
+      const normalizedDate = new Date(date);
+      normalizedDate.setHours(0, 0, 0, 0);
+      
+      const isPast = normalizedDate < today;
+      const isFuture = normalizedDate > today;
+      const hasAttendanceRecord = hasAttendance(date);
+
+      // Determine text color based on rules:
+      // - Current day: Pink text (with pink border)
+      // - Past with attendance: Green text
+      // - Past without attendance (weekday): Red text
+      // - Future: Black text
+      // - Weekend: White text on gray background
+      let textColor = Colors.text.dark; // Default black for future days
+      
+      if (isWeekend) {
+        textColor = Colors.text.white; // White for weekends
+      } else if (isToday) {
+        textColor = Colors.primary.pink; // Pink for today
+      } else if (isPast) {
+        textColor = hasAttendanceRecord ? '#4CAF50' : '#f44336'; // Green if present, red if absent
+      }
 
       days.push(
         <TouchableOpacity
@@ -215,33 +343,19 @@ const Calendar: React.FC<CalendarProps> = ({
           <View style={[
             styles.day,
             isWeekend && { backgroundColor: '#d1d1d1' },
-            isSelected && (isWeekend || !(date < new Date() && dayEvents.length === 0)) && styles.selectedDay,
+            isSelected && styles.selectedDay,
             isToday && !isSelected && styles.todayDay,
             disabled && styles.disabledDay
           ]}>
             <Text style={[
               styles.dayText,
+              { color: textColor },
               isSelected && styles.selectedDayText,
               isToday && !isSelected && styles.todayDayText,
-              disabled && styles.disabledDayText,
-              isWeekend && styles.weekendDayText,
-              !isSelected && !isToday && date < new Date() && dayEvents.length > 0 && { color: dayEvents[0].color }
+              disabled && styles.disabledDayText
             ]}>
               {day}
             </Text>
-            {dayEvents.length > 0 && date >= new Date() && (
-              <View style={styles.eventDots}>
-                {dayEvents.slice(0, 3).map((event, idx) => (
-                  <View
-                    key={idx}
-                    style={[
-                      styles.eventDot,
-                      { backgroundColor: event.color || Colors.primary.pink }
-                    ]}
-                  />
-                ))}
-              </View>
-            )}
           </View>
         </TouchableOpacity>
       );

@@ -43,7 +43,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getRecentLogs: (limit) => ipcRenderer.invoke('get-recent-logs', limit),
   createLogEntry: (logType, description, rfid, studentId, details) => 
     ipcRenderer.invoke('create-log-entry', logType, description, rfid, studentId, details),
+    
+  // Announcements Data
+  createAnnouncement: (announcementData) => ipcRenderer.invoke('create-announcement', announcementData),
+  getAllAnnouncements: (limit, offset) => ipcRenderer.invoke('get-all-announcements', limit, offset),
+  getAnnouncementsCount: () => ipcRenderer.invoke('get-announcements-count'),
+  getAnnouncementById: (id) => ipcRenderer.invoke('get-announcement-by-id', id),
+  updateAnnouncement: (id, announcementData) => ipcRenderer.invoke('update-announcement', { id, announcementData }),
+  deleteAnnouncement: (id) => ipcRenderer.invoke('delete-announcement', id),
+  searchAnnouncements: (searchTerm, limit, offset) => ipcRenderer.invoke('search-announcements', searchTerm, limit, offset),
 
+  // Attendance Statistics
+  getTodayAttendanceStats: () => ipcRenderer.invoke('get-today-attendance-stats'),
+  
   // RFID Scanning
   startRfidScan: () => ipcRenderer.send('rfid:start-scan'),
   stopRfidScan: () => ipcRenderer.send('rfid:stop-scan'),

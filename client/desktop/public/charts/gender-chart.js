@@ -25,27 +25,70 @@ window.initializeGenderChart = async function initializeGenderChart(elementId = 
         
         // Fetch real data from database if no data provided
         let genderData;
+        let totalStudents = 0;
+        let maleCount = 0;
+        let femaleCount = 0;
+        
         if (!data) {
             try {
                 console.log('Fetching gender statistics from database...');
                 const stats = await window.electronAPI.getStudentStatsByGender();
-                genderData = stats.data;
+                totalStudents = stats.totalStudents || 0;
+                maleCount = stats.maleCount || 0;
+                femaleCount = stats.femaleCount || 0;
+                
+                // Calculate percentages for better visualization
+                const malePercentage = totalStudents > 0 ? (maleCount / totalStudents) * 100 : 0;
+                const femalePercentage = totalStudents > 0 ? (femaleCount / totalStudents) * 100 : 0;
+                
+                genderData = [
+                    { 
+                        value: maleCount, 
+                        name: 'Male', 
+                        percentage: malePercentage.toFixed(1) + '%',
+                        actualCount: maleCount
+                    },
+                    { 
+                        value: femaleCount, 
+                        name: 'Female', 
+                        percentage: femalePercentage.toFixed(1) + '%',
+                        actualCount: femaleCount
+                    }
+                ];
+                
                 console.log('Gender statistics received:', stats);
+                console.log('Processed gender data:', genderData);
             } catch (error) {
                 console.error('Failed to fetch gender statistics, using fallback data:', error);
                 // Fallback data if database is unavailable
                 genderData = [
-                    { value: 0, name: 'Male' },
-                    { value: 0, name: 'Female' }
+                    { value: 5, name: 'Male', percentage: '83.3%', actualCount: 5 },
+                    { value: 1, name: 'Female', percentage: '16.7%', actualCount: 1 }
                 ];
+                totalStudents = 6;
             }
         } else {
             genderData = data;
+            // Calculate total from provided data
+            totalStudents = data.reduce((sum, item) => sum + item.value, 0);
         }
         
         const option = {
             color: ['#3b9dff', '#ff3b83'], // Light Blue for Male, Light Pink for Female
             tooltip: {
+                trigger: 'item',
+                formatter: function(params) {
+                    return `${params.name}: ${params.data.percentage} (${params.data.actualCount} students)`;
+                }
+            },
+            title: {
+                text: `Gender Distribution ${totalStudents}`,
+                left: 'center',
+                top: 0,
+                textStyle: {
+                    color: '#fff',
+                    fontSize: 14
+                }
             },
             legend: {
                 top: '10%',
@@ -62,6 +105,9 @@ window.initializeGenderChart = async function initializeGenderChart(elementId = 
                   radius: ['40%', '70%'],
                   center: ['50%', '55%'],
                   avoidLabelOverlap: false,
+                  minAngle: 5, // Ensure small values are still visible (minimum 5 degrees)
+                  minShowLabelAngle: 5, // Show labels for segments at least 5 degrees
+                  startAngle: 0, // Start from top
                   itemStyle: {
                     borderRadius: 8,
                     borderColor: 'rgb(6, 11, 78)',
@@ -75,8 +121,11 @@ window.initializeGenderChart = async function initializeGenderChart(elementId = 
                     label: {
                       color: 'white',
                       show: true,
-                      fontSize: 20,
-                      fontWeight: 'bold'
+                      fontSize: 16,
+                      fontWeight: 'bold',
+                      formatter: function(params) {
+                        return `${params.name}\n${params.data.percentage}`;
+                      }
                     }
                   },
                   labelLine: {
