@@ -335,18 +335,18 @@ function triggerSearch() {
 
 export function setupSearchAndFilter() {
     const searchInput = document.getElementById('student-search');
-    
+
     // Initialize global filter variables
     window.currentGradeFilter = '';
     window.currentRfidFilter = '';
-    
+
     // Debounce search input
     let searchTimeout;
     searchInput.addEventListener('input', () => {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(triggerSearch, 300);
     });
-    
+
     // Setup dropdown menu event listeners
     document.querySelectorAll('[data-grade]').forEach(link => {
         link.addEventListener('click', (e) => {
@@ -356,7 +356,7 @@ export function setupSearchAndFilter() {
             triggerSearch();
         });
     });
-    
+
     document.querySelectorAll('[data-rfid]').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -365,9 +365,12 @@ export function setupSearchAndFilter() {
             triggerSearch();
         });
     });
-    
+
     // Setup pagination controls
     setupPaginationControls();
+
+    // Setup export functionality
+    setupExportFunctionality();
 }
 
 function updateDropdownText(menuType, selectedText) {
@@ -676,22 +679,22 @@ function setupRfidInput() {
 function setupRfidTooltip() {
     const helpIcon = document.getElementById('rfid-help-icon');
     const tooltip = document.getElementById('rfid-tooltip');
-    
+
     console.log('Setting up RFID tooltip...', { helpIcon, tooltip });
-    
+
     if (helpIcon && tooltip) {
         console.log('Both elements found, adding click listener');
-        
+
         // Simple display-based toggle
         helpIcon.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            
+
             console.log('Help icon clicked, toggling tooltip');
-            
+
             // Simple display toggle
             const isVisible = tooltip.style.display !== 'none';
-            
+
             if (isVisible) {
                 tooltip.style.display = 'none';
                 console.log('Hiding tooltip');
@@ -699,7 +702,7 @@ function setupRfidTooltip() {
                 tooltip.style.display = 'block';
                 console.log('Showing tooltip');
             }
-            
+
             // Hide tooltip when clicking elsewhere
             const hideTooltip = function(event) {
                 if (!helpIcon.contains(event.target) && !tooltip.contains(event.target)) {
@@ -708,7 +711,7 @@ function setupRfidTooltip() {
                     console.log('Hiding tooltip from outside click');
                 }
             };
-            
+
             if (!isVisible) {
                 setTimeout(() => {
                     document.addEventListener('click', hideTooltip);
@@ -718,6 +721,291 @@ function setupRfidTooltip() {
     } else {
         console.error('RFID tooltip elements not found:', { helpIcon, tooltip });
     }
+}
+
+// Setup export functionality
+function setupExportFunctionality() {
+    const exportButton = document.querySelector('.export-section button');
+    if (exportButton) {
+        exportButton.addEventListener('click', handleExport);
+    }
+}
+
+// Handle export functionality
+async function handleExport() {
+    try {
+        // Show loading state
+        const exportButton = document.querySelector('.export-section button');
+        const originalText = exportButton.textContent;
+        exportButton.textContent = 'Exporting...';
+        exportButton.disabled = true;
+
+        // Get all students (not paginated) for export
+        const result = await window.electronAPI.getStudentsPaginated(
+            1,
+            10000, // Large number to get all students
+            '', // No search term
+            '', // No grade filter
+            ''  // No RFID filter
+        );
+
+        if (!result || !result.students) {
+            throw new Error('Failed to fetch student data for export');
+        }
+
+        // Create export options
+        const exportOptions = [
+            { label: 'Export as CSV', action: () => exportAsCSV(result.students) },
+            { label: 'Export as PDF', action: () => exportAsPDF(result.students) }
+        ];
+
+        // Show export dialog
+        showExportDialog(exportOptions);
+
+        // Reset button
+        exportButton.textContent = originalText;
+        exportButton.disabled = false;
+
+    } catch (error) {
+        console.error('Export failed:', error);
+        alert('Export failed: ' + error.message);
+
+        // Reset button
+        const exportButton = document.querySelector('.export-section button');
+        if (exportButton) {
+            exportButton.textContent = 'Export';
+            exportButton.disabled = false;
+        }
+    }
+}
+
+// Show export dialog with options
+function showExportDialog(options) {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        min-width: 300px;
+    `;
+
+    // Title
+    const title = document.createElement('h3');
+    title.textContent = 'Export Students';
+    title.style.cssText = 'margin: 0 0 20px 0; color: #333;';
+    modalContent.appendChild(title);
+
+    // Options
+    options.forEach(option => {
+        const button = document.createElement('button');
+        button.textContent = option.label;
+        button.style.cssText = `
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: background 0.2s;
+        `;
+        button.addEventListener('mouseover', () => button.style.background = '#e9ecef');
+        button.addEventListener('mouseout', () => button.style.background = '#f8f9fa');
+        button.addEventListener('click', () => {
+            document.body.removeChild(modal);
+            option.action();
+        });
+        modalContent.appendChild(button);
+    });
+
+    // Cancel button
+    const cancelButton = document.createElement('button');
+    cancelButton.textContent = 'Cancel';
+    cancelButton.style.cssText = `
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin: 15px 0 0 0;
+        border: 1px solid #6c757d;
+        border-radius: 4px;
+        background: #6c757d;
+        color: white;
+        cursor: pointer;
+    `;
+    cancelButton.addEventListener('click', () => document.body.removeChild(modal));
+    modalContent.appendChild(cancelButton);
+
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+}
+
+// Export as CSV
+function exportAsCSV(students) {
+    const headers = ['LRN', 'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Grade Level', 'RFID'];
+    const csvContent = [
+        headers.join(','),
+        ...students.map(student => [
+            student.lrn || '',
+            student.first_name || '',
+            student.middle_name || '',
+            student.last_name || '',
+            student.suffix || '',
+            student.grade_level || '',
+            student.rfid || ''
+        ].map(field => `"${field}"`).join(','))
+    ].join('\n');
+
+    downloadFile(csvContent, 'students.csv', 'text/csv');
+}
+
+// Export as PDF using browser print
+function exportAsPDF(students) {
+    // Create a printable HTML document
+    const printWindow = window.open('', '_blank');
+    const htmlContent = generatePrintableHTML(students);
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+
+    // Wait for content to load then print
+    printWindow.onload = function() {
+        printWindow.print();
+        // Close the print window after printing (optional)
+        // printWindow.close();
+    };
+}
+
+// Generate printable HTML for PDF export
+function generatePrintableHTML(students) {
+    const currentDate = new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString();
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Student List - ${currentDate}</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 20px;
+                    color: #333;
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    border-bottom: 2px solid #333;
+                    padding-bottom: 10px;
+                }
+                .header h1 {
+                    margin: 0;
+                    color: #2c3e50;
+                }
+                .header p {
+                    margin: 5px 0;
+                    color: #7f8c8d;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 20px;
+                }
+                th, td {
+                    border: 1px solid #ddd;
+                    padding: 8px;
+                    text-align: left;
+                }
+                th {
+                    background-color: #f8f9fa;
+                    font-weight: bold;
+                    color: #2c3e50;
+                }
+                tr:nth-child(even) {
+                    background-color: #f8f9fa;
+                }
+                .footer {
+                    margin-top: 30px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #7f8c8d;
+                }
+                @media print {
+                    body { margin: 0; }
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Student List Report</h1>
+                <p>Generated on ${currentDate} at ${currentTime}</p>
+                <p>Total Students: ${students.length}</p>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>LRN</th>
+                        <th>Name</th>
+                        <th>Grade Level</th>
+                        <th>RFID Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${students.map(student => {
+                        const fullName = `${student.first_name || ''} ${student.middle_name ? student.middle_name + ' ' : ''}${student.last_name || ''} ${student.suffix || ''}`.trim();
+                        const rfidStatus = student.rfid ? student.rfid : 'Not Assigned';
+                        return `
+                            <tr>
+                                <td>${student.lrn || 'N/A'}</td>
+                                <td>${fullName}</td>
+                                <td>${student.grade_level || 'N/A'}</td>
+                                <td>${rfidStatus}</td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+
+            <div class="footer">
+                <p>Generated by SAMS Desktop Application</p>
+            </div>
+        </body>
+        </html>
+    `;
+}
+
+// Helper function to download file
+function downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    URL.revokeObjectURL(url);
 }
 
 

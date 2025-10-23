@@ -11,18 +11,18 @@ export async function getTodayAttendanceStats() {
     
     // Query to get time in count for today
     const timeInQuery = `
-      SELECT COUNT(*) as time_in_count 
-      FROM logs 
-      WHERE log_type = 'time_in' 
-      AND created_at::date = $1::date
+      SELECT COUNT(*) as time_in_count
+      FROM rfid_logs
+      WHERE tap_type = 'time_in'
+      AND timestamp::date = $1::date
     `;
-    
+
     // Query to get time out count for today
     const timeOutQuery = `
-      SELECT COUNT(*) as time_out_count 
-      FROM logs 
-      WHERE log_type = 'time_out' 
-      AND created_at::date = $1::date
+      SELECT COUNT(*) as time_out_count
+      FROM rfid_logs
+      WHERE tap_type = 'time_out'
+      AND timestamp::date = $1::date
     `;
     
     // Execute both queries
