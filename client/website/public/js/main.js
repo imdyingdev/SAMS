@@ -24,36 +24,43 @@ document.addEventListener('DOMContentLoaded', function() {
             ctaLink: '#programs'
         }
     ];
+
+    // Background images for carousel
+    const images = ['image1.jpg', 'image2.jpg', 'image3.jpg'];
     
     let currentSlide = 0;
     
-    // Function to update hero content
+    // Function to update hero content and background image
     function updateHeroContent(index) {
         const heroTitle = document.querySelector('.hero-content h1');
         const heroSubtitle = document.querySelector('.hero-content p');
         const heroCta = document.querySelector('.hero-content .cta-button');
         const heroContentElement = document.querySelector('.hero-content');
-        
+        const homeSection = document.getElementById('home');
+
         // Add transition class
         heroContentElement.classList.add('transitioning');
-        
+
         // Fade out
         heroTitle.style.opacity = 0;
         heroSubtitle.style.opacity = 0;
         heroCta.style.opacity = 0;
-        
+
         setTimeout(() => {
+            // Update background image
+            homeSection.style.backgroundImage = `url('../images/${images[index]}')`;
+
             // Update content
             heroTitle.textContent = heroContent[index].title;
             heroSubtitle.textContent = heroContent[index].subtitle;
             heroCta.textContent = heroContent[index].cta;
             heroCta.setAttribute('href', heroContent[index].ctaLink);
-            
+
             // Fade in
             heroTitle.style.opacity = 1;
             heroSubtitle.style.opacity = 1;
             heroCta.style.opacity = 1;
-            
+
             // Remove transition class
             setTimeout(() => {
                 heroContentElement.classList.remove('transitioning');
