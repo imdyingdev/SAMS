@@ -7,7 +7,14 @@
     <div class="settings-section">
         <h2>User Management</h2>
         <div class="settings-item">
-            <label for="user-role-full">User Role:</label>
+            <label for="user-role-full">User Role
+                <span class="role-help-wrapper">
+                    <i class="fa-solid fa-question role-help-icon" id="role-help-icon" title="Click for role information"></i>
+                    <div class="role-tooltip" id="role-tooltip" style="display: none;">
+                        Super Administrator: Possesses unrestricted system access, bypassing confirmation dialogs for enhanced operational efficiency.<br><br>Administrator: Maintains comprehensive access with mandatory confirmation prompts for critical actions to safeguard data integrity and system stability.
+                    </div>
+                </span>
+            </label>
             <select id="user-role-full" name="user-role">
                 <option value="administrator">Administrator</option>
                 <option value="super-administrator">Super Administrator</option>

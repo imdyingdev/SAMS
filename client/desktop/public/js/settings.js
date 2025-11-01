@@ -44,6 +44,52 @@ function setupSettingsHandlers() {
     if (userRoleSelect) {
         userRoleSelect.addEventListener('change', updateUserRole);
     }
+
+    // Role help icon tooltip handler
+    const roleHelpIcon = document.getElementById('role-help-icon');
+    const roleTooltip = document.getElementById('role-tooltip');
+
+    console.log('Setting up role tooltip...', { roleHelpIcon, roleTooltip });
+
+    if (roleHelpIcon && roleTooltip) {
+        console.log('Both elements found, adding click listener');
+
+        // Simple display-based toggle
+        roleHelpIcon.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            console.log('Role help icon clicked, toggling tooltip');
+
+            // Simple display toggle
+            const isVisible = roleTooltip.style.display !== 'none';
+
+            if (isVisible) {
+                roleTooltip.style.display = 'none';
+                console.log('Hiding tooltip');
+            } else {
+                roleTooltip.style.display = 'block';
+                console.log('Showing tooltip');
+            }
+
+            // Hide tooltip when clicking elsewhere
+            const hideTooltip = function(event) {
+                if (!roleHelpIcon.contains(event.target) && !roleTooltip.contains(event.target)) {
+                    roleTooltip.style.display = 'none';
+                    document.removeEventListener('click', hideTooltip);
+                    console.log('Hiding tooltip from outside click');
+                }
+            };
+
+            if (!isVisible) {
+                setTimeout(() => {
+                    document.addEventListener('click', hideTooltip);
+                }, 10);
+            }
+        });
+    } else {
+        console.error('Role tooltip elements not found:', { roleHelpIcon, roleTooltip });
+    }
 }
 
 async function loadCurrentSettings() {
