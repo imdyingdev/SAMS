@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdnjs.cloudflare.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https: blob:;
+    connect-src 'self' https: wss: blob:;
+    media-src 'self' https: blob: data:;
+    worker-src 'self' blob:;
+    frame-src 'self' https:;
+    ">
+
+    <title>AMPID Elementary School - Student Attendance Management System</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Krona+One&family=Krub:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@300..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+
+  <div class="logo-section">
+      <div class="logo">
+        <img src="../assets/media/icon.png" alt="AMPID Elementary School Logo">
+      </div>
+      <div class="school-name">
+          <span class="ampid">AMPID</span><br>
+          ELEMENTARY SCHOOL
+      </div>
+  </div>
+
+    <div class="container">
+        <div class="left-section">
+            
+            <h1 class="main-title">
+                STUDENT<br>
+                ATTENDANCE<br>
+                MANAGEMENT<br>
+                SYSTEM
+            </h1>
+            
+            <p class="subtitle">
+                Manage daily student attendance<br>
+                effortlessly.
+                 <!-- test only 1 -->
+            </p>
+        </div>
+
+        <div class="right-section">
+            <div class="admin-label">Admin Only</div>
+            
+            <form class="login-form" id="loginForm">
+
+                <div class="form-group">
+                    <input type="text" id="username" class="form-input" placeholder="Username">
+                    <span class="input-icon"></span>
+                </div>
+                
+                <div class="form-group">
+                    <input type="password" id="password" class="form-input" placeholder="Password">
+                    <span class="input-icon"></span>
+                </div>
+                
+                <div class="forgot-password">
+                    <a href="#" onclick="alert('Please contact your system administrator')">Forgot Password</a>
+                </div>
+                
+                <button type="submit" class="sign-in-btn">SIGN IN</button>
+                
+                
+                <div class="terms-section">
+                    <input type="checkbox" class="checkbox" id="terms">
+                    <label for="terms">
+                        <a href="#" onclick="showTerms()">Terms of Service & Privacy Policy</a>
+                    </label>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { handleSignIn, initializeLogin } from '../js/login.js';
+        import '../components/legal/terms-modal.js';
+        
+        // Make functions globally available for onclick handlers
+        window.handleSignIn = handleSignIn;
+        
+        // Updated initialization function
+        function init() {
+            console.log('Initializing login page...');
+            initializeLogin();
+            
+            // Handle login via form submit for simplicity and accessibility
+            const form = document.getElementById('loginForm');
+            if (form) {
+                form.addEventListener('submit', handleSignIn);
+            }
+            
+            // Clear form inputs
+            const inputs = document.querySelectorAll('.form-input');
+            inputs.forEach(input => {
+                input.value = '';
+            });
+            
+            // Clear the checkbox
+            const checkbox = document.getElementById('terms');
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+            
+            // Simple focus on first input
+            const firstInput = document.querySelector('input[type="text"]');
+            if (firstInput) {
+                setTimeout(() => firstInput.focus(), 100);
+            }
+        }
+        
+        // Simple initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdnjs.cloudflare.com;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: https: blob:;
+    connect-src 'self' https: wss: blob:;
+    media-src 'self' https: blob: data:;
+    worker-src 'self' blob:;
+    frame-src 'self' https:;
+    ">
+
+    <title>Loading - AMPID Elementary School</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Krona+One&family=Krub:ital,wght@0,200;0,300;0,400;0,500;0,600;0,700;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Darker+Grotesque:wght@300..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../views/css/colors.css">
+
+    <style>
+        /* Import the same styling foundation as index.html */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: var(--gradient-background);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Background pattern - same as index */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--pattern-overlay);
+            pointer-events: none;
+        }
+
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .loading-animation {
+            margin-bottom: 0;
+            filter: drop-shadow(0 8px 32px rgba(255, 5, 105, 0.3));
+            position: relative;
+        }
+
+        .loading-text {
+            font-family: 'Darker Grotesque', sans-serif;
+            font-size: 26px;
+            font-weight: var(--font-weight-extra-bold);
+            background: var(--gradient-title);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 4px 8px var(--primary-pink-text-shadow);
+            margin: 0px;
+            animation: pulse 2s ease-in-out infinite;
+            position: relative;
+            margin-top: -100px; /* Pull text up into the Lottie animation */
+            z-index: 2; /* Ensure text appears above animation */
+        }
+
+        .loading-subtitle {
+            font-family: 'Darker Grotesque', sans-serif;
+            font-size: 16px;
+            font-weight: var(--font-weight-bold);
+            color: var(--text-white-primary);
+            text-shadow: 2px 2px 2px var(--shadow-text);
+            position: relative;
+            z-index: 2;
+            margin-top: -5px;
+            border-radius: 8px;
+            backdrop-filter: blur(2px);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.02);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .logo-section {
+                top: 20px;
+                left: 20px;
+            }
+
+            .logo {
+                width: var(--logo-size-mobile);
+                height: var(--logo-size-mobile);
+            }
+
+            .loading-text {
+                font-size: 28px;
+            }
+
+            .loading-subtitle {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container">
+        <div class="loading-animation">
+            <dotlottie-wc 
+                src="../assets/lottie/loading.lottie" 
+                style="width: 300px; height: 300px" 
+                speed="1" 
+                autoplay 
+                loop>
+            </dotlottie-wc>
+        </div>
+        
+        <div class="loading-text">Loading Dashboard</div>
+        <div class="loading-subtitle" id="loadingSubtitle">Please wait while we prepare everything for you...</div>
+    </div>
+
+    <!-- Load the Lottie Web Component - same as index.html -->
+    <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js" type="module"></script>
+    
+    <script type="module">
+        import { initializeLoading } from '../js/loading.js';
+        
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', initializeLoading);
+        
+        // Fallback initialization
+        if (document.readyState !== 'loading') {
+            initializeLoading();
+        }
+    </script>
+</body>
+</html>

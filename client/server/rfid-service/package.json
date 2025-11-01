@@ -1,0 +1,23 @@
+{
+  "name": "rfid-service",
+  "version": "1.0.0",
+  "description": "RFID Service for retrieving student information",
+  "main": "src/main/index.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.75.1",
+    "dotenv": "^16.6.1",
+    "electron": "^25.0.0"
+  },
+  "keywords": [
+    "rfid",
+    "electron",
+    "student",
+    "service"
+  ],
+  "author": "SAMS Team",
+  "license": "MIT"
+}

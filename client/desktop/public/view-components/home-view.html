@@ -1,0 +1,72 @@
+<div class="welcome-message">
+    <h1 class="welcome-title">Dashboard</h1>
+    <p class="welcome-subtitle">Here's a quick overview of your school's attendance.</p>
+</div>
+<!-- Statistics and other content will go here -->
+<!-- First row: 1fr 1fr 1fr -->
+<div class="dashboard-grid-row1">
+    <div class="card">
+        <h3 class="card-title">Calendar</h3>
+        <div id="calendar-container"></div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Today's Attendance</h3>
+        <div class="card-content attendance-stats vertical">
+            <div class="attendance-stat-item">
+                <div class="stat-icon time-in">
+                    <i class='bx bx-log-in'></i>
+                </div>
+                <div class="stat-details">
+                    <h4>Time In Today</h4>
+                    <p id="time-in-count">--</p>
+                </div>
+            </div>
+            <div class="attendance-stat-item">
+                <div class="stat-icon time-out">
+                    <i class='bx bx-log-out'></i>
+                </div>
+                <div class="stat-details">
+                    <h4>Time Out Today</h4>
+                    <p id="time-out-count">--</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Latest Announcement</h3>
+        <div class="card-content dashboard-announcements compact">
+            <div class="dashboard-announcements-list" id="dashboard-announcements-list">
+                <div class="dashboard-announcement-loading">
+                    <div class="loading-spinner small"></div>
+                    <p>Loading...</p>
+                </div>
+                <!-- Latest announcement will be loaded here -->
+            </div>
+            <div class="dashboard-announcements-footer">
+                <button class="btn-view-all" id="btn-view-all-announcements">
+                    <span>View All</span>
+                    <i class='bx bx-right-arrow-alt'></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Second row: 1.5fr 1fr 1fr -->
+<div class="dashboard-grid-row2">
+    <div class="card">
+        <h3 class="card-title">Grade Level Distribution</h3>
+        <div id="student-chart" style="border-radius: 12px; flex-grow: 1; min-height: 260px;"></div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Daily Attendance</h3>
+        <div id="daily-attendance-chart" style="border-radius: 12px; flex-grow: 1; min-height: 260px;"></div>
+    </div>
+
+    <div class="card">
+        <div id="gender-chart" style="border-radius: 12px; flex-grow: 1; min-height: 260px;"></div>
+    </div>
+</div>

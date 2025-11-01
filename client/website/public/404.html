@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Not Found - AMPID ES</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .error-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .error-code {
+            font-size: 120px;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary-pink), var(--secondary-pink-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+        }
+        
+        .error-message {
+            font-size: 24px;
+            margin-bottom: 30px;
+        }
+        
+        .back-home {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary-pink), var(--secondary-pink-accent));
+            color: var(--text-white);
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 30px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px var(--primary-pink-shadow);
+        }
+        
+        .back-home:hover {
+            background: linear-gradient(135deg, var(--primary-pink-hover), var(--primary-pink));
+            transform: translateY(-3px);
+            box-shadow: 0 6px 30px var(--primary-pink-shadow);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-code">404</div>
+        <div class="error-message">Oops! The page you're looking for doesn't exist.</div>
+        <a href="/" class="back-home">Back to Home</a>
+    </div>
+</body>
+</html>

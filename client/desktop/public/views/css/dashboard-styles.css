@@ -1,0 +1,143 @@
+/* Dashboard - Full Width Header Layout */
+
+body {
+    display: flex;
+    flex-direction: row; /* Stack header and content-wrapper vertically */
+    height: 100vh;
+    overflow: hidden;
+    background: var(--gradient-background);
+}
+
+/* Header styles moved to header.css */
+
+/* Only exclude truly interactive elements from drag region - like testing.html */
+button,
+input,
+select,
+a,
+.btn-logout {
+    -webkit-app-region: no-drag; /* Exclude interactive elements only */
+}
+
+.content-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Fill remaining vertical space */
+    overflow: hidden; /* Prevent wrapper from creating its own scrollbars */
+}
+
+/* Sidebar styles moved to sidebar.css */
+.main-content {
+    display: flex;
+    justify-content: space-evenly;
+    flex-direction: column;
+    padding: 1rem;
+    -webkit-app-region: no-drag;
+    overflow: hidden;
+    flex-grow: 1;
+}
+
+.welcome-message {
+    background-color: transparent;
+    color: var(--text-dark);
+    /* margin-bottom: 2rem; */
+}
+
+.welcome-title {
+    font-size: 2rem;
+    font-weight: var(--font-weight-bold);
+    margin-bottom: 0.25rem;
+}
+
+.welcome-subtitle {
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+/* First row: Equal columns */
+.dashboard-grid-row1 {
+    background-color: transparent;
+    display: grid;
+    padding: 20px 20px 0px 20px;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-auto-rows: auto;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+/* Second row: First column wider */
+.dashboard-grid-row2 {
+    background-color: transparent;
+    display: grid;
+    padding: 20px;
+    grid-template-columns: 1.5fr 1.5fr 1fr;
+    grid-auto-rows: auto;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.card {
+    background-color: transparent;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 150px;
+    /* background-color: transparent; */
+
+    /* display: flex;
+    justify-content: center;
+    align-items: center; */
+
+    /* background: var(--glass-light);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-primary);
+    border: 1px solid var(--border-light); */
+}
+
+/* Chart containers should be flexible */
+#student-chart, #gender-chart {
+    width: 100%;
+    height: 100%;
+}
+
+.card-title {
+    position: absolute;
+    top: 0.8rem;
+    left: 1rem;
+    z-index: 1;
+    font-size: 1rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--text-dark-secondary);
+}
+
+.stat {
+    font-size: 2.5rem;
+    font-weight: var(--font-weight-extra-bold);
+    color: var(--text-dark-primary);
+}
+
+
+@media (max-width: 768px) {
+    .dashboard-grid-row1,
+    .dashboard-grid-row2 {
+        grid-template-columns: 1fr;
+        padding: 15px;
+        gap: 1rem;
+    }
+    
+    .welcome-title {
+        font-size: 1.5rem;
+    }
+    
+    .main-content {
+        padding: 0.75rem;
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 1024px) {
+    .dashboard-grid-row1,
+    .dashboard-grid-row2 {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
