@@ -117,6 +117,7 @@
     animation: spin 1s linear infinite;
 }
 
+<<<<<<< HEAD
 /* Announcements List - Bento Box Layout */
 .announcements-list {
     width: 100%;
@@ -134,25 +135,49 @@
     gap: 1.5rem;
     flex: 1;
     min-width: 0;
+=======
+/* Announcements List */
+.announcements-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+>>>>>>> origin/main
 }
 
 /* Announcement Card */
 .announcement-card {
+<<<<<<< HEAD
     background: #ffffff;
     border: 1px solid #e5e7eb;
+=======
+    background: var(--glass-light);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+>>>>>>> origin/main
     border-radius: var(--border-radius);
     padding: 1.5rem;
     transition: all 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+<<<<<<< HEAD
     display: flex;
     flex-direction: column;
     height: fit-content;
+=======
+>>>>>>> origin/main
 }
 
 .announcement-card:hover {
     transform: translateY(-2px);
+<<<<<<< HEAD
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     border-color: #667eea;
+=======
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
+>>>>>>> origin/main
 }
 
 .announcement-card-header {
@@ -165,7 +190,11 @@
 .announcement-title {
     font-size: 1.5rem;
     font-weight: 600;
+<<<<<<< HEAD
     color: #1f2937;
+=======
+    color: var(--text-white);
+>>>>>>> origin/main
     margin: 0;
     flex: 1;
 }
@@ -176,8 +205,13 @@
 }
 
 .action-btn {
+<<<<<<< HEAD
     background: #f3f4f6;
     border: 1px solid #e5e7eb;
+=======
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+>>>>>>> origin/main
     border-radius: var(--border-radius);
     padding: 0.5rem;
     cursor: pointer;
@@ -191,7 +225,11 @@
 
 .action-btn i {
     font-size: 1.1rem;
+<<<<<<< HEAD
     color: #6b7280;
+=======
+    color: var(--text-white);
+>>>>>>> origin/main
 }
 
 .action-btn.edit-btn:hover {
@@ -213,13 +251,20 @@
 }
 
 .announcement-content {
+<<<<<<< HEAD
     color: #4b5563;
+=======
+    color: var(--text-white-muted);
+>>>>>>> origin/main
     font-size: 1rem;
     line-height: 1.6;
     margin-bottom: 1rem;
     white-space: pre-wrap;
     word-wrap: break-word;
+<<<<<<< HEAD
     flex-grow: 1;
+=======
+>>>>>>> origin/main
 }
 
 .announcement-footer {
@@ -227,9 +272,15 @@
     justify-content: space-between;
     align-items: center;
     padding-top: 1rem;
+<<<<<<< HEAD
     border-top: 1px solid #e5e7eb;
     font-size: 0.85rem;
     color: #6b7280;
+=======
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.85rem;
+    color: var(--text-white-muted);
+>>>>>>> origin/main
 }
 
 .announcement-author {
@@ -392,6 +443,7 @@
     color: rgba(255, 255, 255, 0.4);
 }
 
+<<<<<<< HEAD
 .character-count {
     display: block;
     margin-top: 0.5rem;
@@ -400,6 +452,8 @@
     text-align: right;
 }
 
+=======
+>>>>>>> origin/main
 /* Modal Actions */
 .modal-actions {
     display: flex;
@@ -451,10 +505,14 @@
     box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
 }
 
+<<<<<<< HEAD
 /* Fullscreen Layout - handled by JavaScript */
 
 /* Tablet - handled by JavaScript */
 
+=======
+/* Responsive Design */
+>>>>>>> origin/main
 @media (max-width: 768px) {
     .announcements-header {
         flex-direction: column;
@@ -495,7 +553,10 @@
     padding: 3rem;
     text-align: center;
     color: var(--text-white-muted);
+<<<<<<< HEAD
     width: 100%;
+=======
+>>>>>>> origin/main
 }
 
 .empty-state i {

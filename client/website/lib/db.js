@@ -8,15 +8,20 @@ function getPool() {
       connectionString: process.env.DATABASE_URL,
       ssl: {
         rejectUnauthorized: false
+<<<<<<< HEAD
       },
       // Serverless optimization
       max: 1,
       connectionTimeoutMillis: 5000
+=======
+      }
+>>>>>>> origin/main
     });
   }
   return pool;
 }
 
+<<<<<<< HEAD
 async function initializeDatabase() {
   const dbPool = getPool();
   
@@ -74,3 +79,6 @@ async function initializeDatabase() {
 }
 
 module.exports = { getPool, initializeDatabase };
+=======
+module.exports = { getPool };
+>>>>>>> origin/main

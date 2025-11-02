@@ -1,16 +1,24 @@
 import { query } from './db-connection.js';
 
+<<<<<<< HEAD
 // Create a new student to the database (alias for saveStudent)
 async function createStudent(studentData) {
   return saveStudent(studentData);
 }
 
+=======
+>>>>>>> origin/main
 // Save a new student to the database
 async function saveStudent(studentData) {
 
   const insertQuery = `
+<<<<<<< HEAD
     INSERT INTO students (first_name, middle_name, last_name, suffix, lrn, grade_level, section, gender, rfid)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+=======
+    INSERT INTO students (first_name, middle_name, last_name, suffix, lrn, grade_level, gender, rfid)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+>>>>>>> origin/main
     RETURNING *;
   `;
 
@@ -21,7 +29,10 @@ async function saveStudent(studentData) {
     studentData.suffix,
     studentData.lrn,
     studentData.grade_level,
+<<<<<<< HEAD
     studentData.section && studentData.section.trim() !== '' ? studentData.section : null,
+=======
+>>>>>>> origin/main
     studentData.gender || 'Male', // Default to 'Male' if not provided
     studentData.rfid && studentData.rfid.trim() !== '' ? studentData.rfid : null
   ];
@@ -49,7 +60,11 @@ async function getAllStudents() {
   try {
     
     const result = await query(`
+<<<<<<< HEAD
       SELECT
+=======
+      SELECT 
+>>>>>>> origin/main
         id,
         first_name,
         middle_name,
@@ -57,12 +72,20 @@ async function getAllStudents() {
         suffix,
         lrn,
         grade_level,
+<<<<<<< HEAD
         section,
         gender,
         rfid,
         created_at
       FROM students
       ORDER BY
+=======
+        gender,
+        rfid,
+        created_at
+      FROM students 
+      ORDER BY 
+>>>>>>> origin/main
         grade_level ASC,
         last_name ASC,
         first_name ASC
@@ -133,7 +156,11 @@ async function getStudentsPaginated(page = 1, pageSize = 50, searchTerm = '', gr
     
     // Get paginated results
     const dataQuery = `
+<<<<<<< HEAD
       SELECT
+=======
+      SELECT 
+>>>>>>> origin/main
         id,
         first_name,
         middle_name,
@@ -141,6 +168,7 @@ async function getStudentsPaginated(page = 1, pageSize = 50, searchTerm = '', gr
         suffix,
         lrn,
         grade_level,
+<<<<<<< HEAD
         section,
         gender,
         rfid,
@@ -148,6 +176,14 @@ async function getStudentsPaginated(page = 1, pageSize = 50, searchTerm = '', gr
       FROM students
       ${whereClause}
       ORDER BY
+=======
+        gender,
+        rfid,
+        created_at
+      FROM students 
+      ${whereClause}
+      ORDER BY 
+>>>>>>> origin/main
         grade_level ASC,
         last_name ASC,
         first_name ASC
@@ -222,6 +258,7 @@ async function updateStudent(studentId, studentData) {
       suffix,
       lrn,
       grade_level,
+<<<<<<< HEAD
       section,
       gender,
       rfid
@@ -230,16 +267,31 @@ async function updateStudent(studentId, studentData) {
     const result = await query(`
       UPDATE students
       SET
+=======
+      gender,
+      rfid
+    } = studentData;
+    
+    const result = await query(`
+      UPDATE students 
+      SET 
+>>>>>>> origin/main
         first_name = $1,
         middle_name = $2,
         last_name = $3,
         suffix = $4,
         lrn = $5,
         grade_level = $6,
+<<<<<<< HEAD
         section = $7,
         gender = $8,
         rfid = $9
       WHERE id = $10
+=======
+        gender = $7,
+        rfid = $8
+      WHERE id = $9
+>>>>>>> origin/main
       RETURNING *
     `, [
       first_name,
@@ -248,7 +300,10 @@ async function updateStudent(studentId, studentData) {
       suffix || null,
       lrn,
       grade_level,
+<<<<<<< HEAD
       section && section.trim() !== '' ? section : null,
+=======
+>>>>>>> origin/main
       gender || 'Male',
       rfid && rfid.trim() !== '' ? rfid : null,
       studentId
@@ -269,11 +324,16 @@ async function updateStudent(studentId, studentData) {
 // Get student by ID
 async function getStudentById(studentId) {
   try {
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     const result = await query(
       'SELECT * FROM students WHERE id = $1',
       [studentId]
     );
+<<<<<<< HEAD
 
     if (result.rows.length === 0) {
       throw new Error('Student not found');
@@ -281,12 +341,22 @@ async function getStudentById(studentId) {
 
     return result.rows[0];
 
+=======
+    
+    if (result.rows.length === 0) {
+      throw new Error('Student not found');
+    }
+    
+    return result.rows[0];
+    
+>>>>>>> origin/main
   } catch (error) {
     console.error('[STUDENT] Error:', error.message);
     throw new Error(`Failed to fetch student: ${error.message}`);
   }
 }
 
+<<<<<<< HEAD
 // Get unique grade levels
 async function getUniqueGradeLevels() {
   try {
@@ -351,13 +421,20 @@ async function getStudentsForSF2(gradeLevel, section) {
 
 export {
   createStudent,
+=======
+export {
+>>>>>>> origin/main
   saveStudent,
   getAllStudents,
   getStudentsPaginated,
   deleteStudent,
   updateStudent,
+<<<<<<< HEAD
   getStudentById,
   getUniqueGradeLevels,
   getUniqueSections,
   getStudentsForSF2
+=======
+  getStudentById
+>>>>>>> origin/main
 };

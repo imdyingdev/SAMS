@@ -14,7 +14,11 @@ app.use(express.json());
 
 // Initialize services
 const emailService = new EmailService();
+<<<<<<< HEAD
 const verificationStore = require('./verificationStore');
+=======
+const verificationStore = new VerificationStore();
+>>>>>>> origin/main
 
 // Routes
 

@@ -2,9 +2,15 @@ import { app, BrowserWindow, Menu, ipcMain, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { testConnection } from './database/db-connection.js';
+<<<<<<< HEAD
 import { authenticateUser, createDefaultAdmin, updateUserRole } from './database/auth-service.js';
 import { initializeTables } from './database/db-init.js';
 import { createStudent, saveStudent, getAllStudents, getStudentsPaginated, deleteStudent, updateStudent, getStudentById, getUniqueGradeLevels, getUniqueSections, getStudentsForSF2 } from './database/student-service.js';
+=======
+import { authenticateUser, createDefaultAdmin } from './database/auth-service.js';
+import { initializeTables } from './database/db-init.js';
+import { saveStudent, getAllStudents, getStudentsPaginated, deleteStudent, updateStudent, getStudentById } from './database/student-service.js';
+>>>>>>> origin/main
 import { getStudentStatsByGrade, getStudentStatsByGender } from './database/stats-service.js';
 import { getLogsPaginated, getRecentLogs, createLogEntry, logRfidActivity, logStudentActivity, logAuthActivity } from './database/logs-service.js';
 import { createAnnouncement, getAllAnnouncements, getAnnouncementsCount, getAnnouncementById, updateAnnouncement, deleteAnnouncement, searchAnnouncements } from './database/announcement-service.js';
@@ -13,7 +19,10 @@ import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+<<<<<<< HEAD
 import ExcelJS from 'exceljs';
+=======
+>>>>>>> origin/main
 
 // ES6 module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -280,6 +289,7 @@ app.on('window-all-closed', () => {
 
 // --- IPC Handlers ---
 
+<<<<<<< HEAD
 // Handle create student request
 ipcMain.handle('create-student', async (event, studentData) => {
   try {
@@ -291,6 +301,8 @@ ipcMain.handle('create-student', async (event, studentData) => {
   }
 });
 
+=======
+>>>>>>> origin/main
 // Handle student save request
 ipcMain.handle('save-student', async (event, studentData) => {
   try {
@@ -527,6 +539,7 @@ ipcMain.handle('auth:login', async (event, credentials) => {
   }
 });
 
+<<<<<<< HEAD
 // Get user role handler
 ipcMain.handle('auth:get-user-role', async (event, userId) => {
   try {
@@ -561,6 +574,8 @@ ipcMain.handle('auth:update-user-role', async (event, userId, newRole) => {
   }
 });
 
+=======
+>>>>>>> origin/main
 // Get student statistics by grade handler
 ipcMain.handle('get-student-stats-by-grade', async (event) => {
   try {
@@ -734,6 +749,7 @@ ipcMain.handle('get-today-attendance-stats', async (event) => {
   }
 });
 
+<<<<<<< HEAD
 // Export students to Excel handler
 ipcMain.handle('export-students-excel', async (event, students) => {
   try {
@@ -1320,4 +1336,6 @@ ipcMain.handle('export-logs-excel', async (event) => {
   }
 });
 
+=======
+>>>>>>> origin/main
 // Main process initialized

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 module.exports = async (req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,3 +20,12 @@ module.exports = async (req, res) => {
     ]
   });
 };
+=======
+export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  res.status(200).json({ status: 'ok', message: 'Server is running' });
+}
+>>>>>>> origin/main

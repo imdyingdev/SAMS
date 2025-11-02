@@ -71,6 +71,7 @@ function setupEventListeners() {
         searchInput.addEventListener('input', handleSearch);
     }
     
+<<<<<<< HEAD
     // Character counter for content
     const contentTextarea = document.getElementById('announcement-content');
     const characterCount = document.getElementById('content-character-count');
@@ -88,6 +89,8 @@ function setupEventListeners() {
         });
     }
     
+=======
+>>>>>>> origin/main
     // Close modals on background click
     const announcementModal = document.getElementById('announcement-modal');
     const deleteModal = document.getElementById('delete-confirmation-modal');
@@ -187,7 +190,11 @@ export async function loadAnnouncements() {
     }
 }
 
+<<<<<<< HEAD
 // Render announcements in bento box column layout
+=======
+// Render announcements
+>>>>>>> origin/main
 function renderAnnouncements(announcements) {
     const announcementsList = document.getElementById('announcements-list');
     
@@ -195,6 +202,7 @@ function renderAnnouncements(announcements) {
     
     announcementsList.innerHTML = '';
     
+<<<<<<< HEAD
     // Determine number of columns based on screen width
     const screenWidth = window.innerWidth;
     let numColumns = 2; // default
@@ -218,6 +226,11 @@ function renderAnnouncements(announcements) {
         const columnIndex = index % numColumns;
         const card = createAnnouncementCard(announcement);
         columns[columnIndex].appendChild(card);
+=======
+    announcements.forEach(announcement => {
+        const card = createAnnouncementCard(announcement);
+        announcementsList.appendChild(card);
+>>>>>>> origin/main
     });
 }
 
@@ -336,19 +349,25 @@ function openCreateModal() {
     const modalTitle = document.getElementById('modal-title');
     const submitText = document.getElementById('submit-text');
     const form = document.getElementById('announcement-form');
+<<<<<<< HEAD
     const characterCount = document.getElementById('content-character-count');
+=======
+>>>>>>> origin/main
     
     if (!modal) return;
     
     // Reset form
     if (form) form.reset();
     
+<<<<<<< HEAD
     // Reset character count
     if (characterCount) {
         characterCount.textContent = '0 / 500';
         characterCount.style.color = '#ef4444'; // Red for below minimum
     }
     
+=======
+>>>>>>> origin/main
     // Set to create mode
     currentEditingId = null;
     document.getElementById('announcement-id').value = '';
@@ -392,6 +411,7 @@ async function openEditModal(id) {
                 document.getElementById('announcement-title').value = announcement.title;
                 document.getElementById('announcement-content').value = announcement.content;
                 
+<<<<<<< HEAD
                 // Update character count
                 const characterCount = document.getElementById('content-character-count');
                 if (characterCount) {
@@ -400,6 +420,8 @@ async function openEditModal(id) {
                     characterCount.style.color = length < 150 ? '#ef4444' : 'rgba(255, 255, 255, 0.6)';
                 }
                 
+=======
+>>>>>>> origin/main
                 // Set to edit mode
                 currentEditingId = id;
                 
@@ -423,6 +445,7 @@ async function openEditModal(id) {
             document.getElementById('announcement-id').value = announcement.id;
             document.getElementById('announcement-title').value = announcement.title;
             document.getElementById('announcement-content').value = announcement.content;
+<<<<<<< HEAD
 
             // Update character count
             const characterCount = document.getElementById('content-character-count');
@@ -435,6 +458,12 @@ async function openEditModal(id) {
             // Set to edit mode
             currentEditingId = id;
 
+=======
+            
+            // Set to edit mode
+            currentEditingId = id;
+            
+>>>>>>> origin/main
             if (modalTitle) modalTitle.textContent = 'Edit Announcement';
             if (submitText) submitText.textContent = 'Update';
             
@@ -528,6 +557,7 @@ async function handleFormSubmit(e) {
                 
                 const announcementsList = document.getElementById('announcements-list');
                 if (announcementsList) {
+<<<<<<< HEAD
                     // Add to first column
                     const firstColumn = announcementsList.querySelector('.announcement-column');
                     if (firstColumn) {
@@ -537,6 +567,10 @@ async function handleFormSubmit(e) {
                         // If no columns exist, reload all announcements
                         loadAnnouncements();
                     }
+=======
+                    const card = createAnnouncementCard(mockAnnouncement);
+                    announcementsList.insertBefore(card, announcementsList.firstChild);
+>>>>>>> origin/main
                     
                     // Hide empty state if it was showing
                     const emptyState = announcementsList.querySelector('.empty-state');
@@ -603,10 +637,16 @@ async function confirmDelete() {
             if (card) {
                 card.remove();
                 
+<<<<<<< HEAD
                 // Check if there are any announcements left in all columns
                 const announcementsList = document.getElementById('announcements-list');
                 const allCards = announcementsList ? announcementsList.querySelectorAll('.announcement-card') : [];
                 if (allCards.length === 0) {
+=======
+                // Check if there are any announcements left
+                const announcementsList = document.getElementById('announcements-list');
+                if (announcementsList && announcementsList.children.length === 0) {
+>>>>>>> origin/main
                     showEmptyState();
                 }
             }

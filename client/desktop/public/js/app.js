@@ -1,10 +1,15 @@
 // Main SPA application controller
 import { initializeDashboard } from './dashboard.js';
 import { initializeStudentsPage, loadStudents, setupSearchAndFilter } from './students.js';
+<<<<<<< HEAD
 import { initializeAddStudentPage } from './add-student.js';
 import { initializeLogsPage, loadLogs, setupLogsSearchAndFilter } from './logs.js';
 import { initializeAnnouncementsPage, loadAnnouncements, setupAnnouncementsSearch } from './announcements.js';
 import { initializeSettingsPage } from './settings.js';
+=======
+import { initializeLogsPage, loadLogs, setupLogsSearchAndFilter } from './logs.js';
+import { initializeAnnouncementsPage, loadAnnouncements, setupAnnouncementsSearch } from './announcements.js';
+>>>>>>> origin/main
 import { initializeDashboardAnnouncements, loadDashboardAnnouncements } from './dashboard-announcements.js';
 import { initializeDashboardAttendance, loadTodayAttendanceStats } from './dashboard-attendance.js';
 import { loadComponent } from './componentLoader.js';
@@ -23,12 +28,15 @@ const views = {
         init: initializeStudentsView,
         cleanup: cleanupStudentsView
     },
+<<<<<<< HEAD
     'add-student': {
         template: '../view-components/add-student-view.html',
         title: 'Add Student',
         init: initializeAddStudentView,
         cleanup: cleanupAddStudentView
     },
+=======
+>>>>>>> origin/main
     logs: {
         template: '../view-components/logs-view.html',
         title: 'Activity Logs',
@@ -40,12 +48,15 @@ const views = {
         title: 'Announcements',
         init: initializeAnnouncementsView,
         cleanup: cleanupAnnouncementsView
+<<<<<<< HEAD
     },
     settings: {
         template: '../view-components/settings-view.html',
         title: 'Settings',
         init: initializeSettingsView,
         cleanup: cleanupSettingsView
+=======
+>>>>>>> origin/main
     }
 };
 
@@ -150,7 +161,11 @@ function setupNavigation() {
             navigateToView(viewName);
         }
     });
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> origin/main
     console.log('✅ Navigation setup complete');
 }
 
@@ -221,6 +236,7 @@ async function initializeStudentsView() {
     }, 50);
 }
 
+<<<<<<< HEAD
 async function initializeAddStudentView() {
     console.log('➕ Initializing add student view...');
 
@@ -228,6 +244,8 @@ async function initializeAddStudentView() {
     initializeAddStudentPage();
 }
 
+=======
+>>>>>>> origin/main
 async function initializeLogsView() {
     console.log('📋 Initializing logs view...');
     
@@ -243,17 +261,26 @@ async function initializeLogsView() {
 
 async function initializeAnnouncementsView() {
     console.log('📢 Initializing announcements view...');
+<<<<<<< HEAD
 
     // Initialize announcements page functionality
     initializeAnnouncementsPage();
     setupAnnouncementsSearch();
 
+=======
+    
+    // Initialize announcements page functionality
+    initializeAnnouncementsPage();
+    setupAnnouncementsSearch();
+    
+>>>>>>> origin/main
     // Add a small delay to ensure DOM is ready and visibility states are set
     setTimeout(() => {
         loadAnnouncements();
     }, 50);
 }
 
+<<<<<<< HEAD
 async function initializeSettingsView() {
     console.log('⚙️ Initializing settings view...');
 
@@ -261,6 +288,8 @@ async function initializeSettingsView() {
     initializeSettingsPage();
 }
 
+=======
+>>>>>>> origin/main
 // View cleanup functions
 function cleanupHomeView() {
     console.log('🧹 Cleaning up home view...');
@@ -305,6 +334,7 @@ function cleanupStudentsView() {
     }
 }
 
+<<<<<<< HEAD
 function cleanupAddStudentView() {
     console.log('🧹 Cleaning up add student view...');
     // Clear form fields
@@ -314,6 +344,8 @@ function cleanupAddStudentView() {
     });
 }
 
+=======
+>>>>>>> origin/main
 function cleanupLogsView() {
     console.log('🧹 Cleaning up logs view...');
     // No search input to cleanup since we removed it
@@ -328,11 +360,14 @@ function cleanupAnnouncementsView() {
     }
 }
 
+<<<<<<< HEAD
 function cleanupSettingsView() {
     console.log('🧹 Cleaning up settings view...');
     // No specific cleanup needed for settings view
 }
 
+=======
+>>>>>>> origin/main
 // Helper function for student search (if needed)
 function handleStudentSearch(event) {
     // This would be handled by the students.js module

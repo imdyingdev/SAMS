@@ -1,5 +1,6 @@
 {
   "version": 2,
+<<<<<<< HEAD
   "rewrites": [
     {
       "source": "/",
@@ -16,6 +17,22 @@
     {
       "source": "/images/(.*)",
       "destination": "/public/images/$1"
+=======
+  "builds": [
+    {
+      "src": "server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/server.js"
+>>>>>>> origin/main
     }
   ]
 }
