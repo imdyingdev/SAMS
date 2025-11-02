@@ -13,16 +13,21 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  // Serverless optimization
+  max: 1,
+  connectionTimeoutMillis: 5000
 });
 
-// Test database connection
-pool.connect()
-  .then(client => {
+// Initialize database (only in development or on first deployment)
+// In serverless, this runs on cold starts
+async function initializeDatabase() {
+  try {
+    const client = await pool.connect();
     console.log('Connected to PostgreSQL database');
     
     // Create announcements table if it doesn't exist
-    client.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS announcements (
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
@@ -31,53 +36,46 @@ pool.connect()
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_by_username TEXT DEFAULT 'Admin'
       )
-    `)
-    .then(() => {
-      console.log('Announcements table created or already exists');
+    `);
+    console.log('Announcements table created or already exists');
+    
+    // Check if we need to insert sample data
+    const result = await client.query('SELECT COUNT(*) as count FROM announcements');
+    
+    if (result.rows[0].count === '0') {
+      // Insert sample data if table is empty
+      const sampleAnnouncements = [
+        {
+          title: 'Welcome to AMPID ES',
+          content: 'Welcome to AMPID Elementary School\'s online portal. Stay updated with the latest school announcements and news.'
+        },
+        {
+          title: 'School Events',
+          content: 'Check back regularly for updates on upcoming school events, activities, and important dates.'
+        },
+        {
+          title: 'Stay Connected',
+          content: 'We\'re committed to keeping parents and students informed. This announcement system will help us stay connected.'
+        }
+      ];
       
-      // Check if we need to insert sample data
-      return client.query('SELECT COUNT(*) as count FROM announcements');
-    })
-    .then(result => {
-      if (result.rows[0].count === '0') {
-        // Insert sample data if table is empty
-        const sampleAnnouncements = [
-          {
-            title: 'Welcome to SAMS',
-            content: 'Welcome to the Student Attendance Management System. This system helps track student attendance efficiently.'
-          },
-          {
-            title: 'System Maintenance',
-            content: 'The system will be down for maintenance on Saturday from 10 PM to 2 AM.'
-          },
-          {
-            title: 'New Feature: Announcements',
-            content: 'We have added a new Announcements feature to keep everyone informed about important updates.'
-          }
-        ];
-        
-        const insertPromises = sampleAnnouncements.map(announcement => {
-          return client.query(
-            'INSERT INTO announcements (title, content) VALUES ($1, $2)',
-            [announcement.title, announcement.content]
-          );
-        });
-        
-        return Promise.all(insertPromises);
+      for (const announcement of sampleAnnouncements) {
+        await client.query(
+          'INSERT INTO announcements (title, content) VALUES ($1, $2)',
+          [announcement.title, announcement.content]
+        );
       }
-    })
-    .then(() => {
-      console.log('Sample announcements inserted or already exist');
-      client.release();
-    })
-    .catch(err => {
-      console.error('Error setting up database:', err);
-      client.release();
-    });
-  })
-  .catch(err => {
-    console.error('Error connecting to database:', err);
-  });
+      console.log('Sample announcements inserted');
+    }
+    
+    client.release();
+  } catch (err) {
+    console.error('Error initializing database:', err);
+  }
+}
+
+// Run initialization (safe for serverless - uses connection pooling)
+initializeDatabase();
 
 // Middleware
 app.use(express.json());
@@ -94,13 +92,21 @@ app.get('/', (req, res) => {
 // Get latest 3 announcements
 app.get('/api/announcements/latest', async (req, res) => {
   try {
+    console.log('Fetching latest announcements...');
+    console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    
     const result = await pool.query(
       'SELECT * FROM announcements ORDER BY created_at DESC LIMIT 3'
     );
+    console.log('Found announcements:', result.rows.length);
     res.json(result.rows);
   } catch (err) {
     console.error('Error fetching latest announcements:', err);
-    res.status(500).json({ error: 'Failed to fetch announcements' });
+    res.status(500).json({ 
+      error: 'Failed to fetch announcements',
+      message: err.message,
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
   }
 });
 
