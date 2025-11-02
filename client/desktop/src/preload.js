@@ -8,11 +8,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // System and Auth
   login: (credentials) => ipcRenderer.invoke('auth:login', credentials),
   getVersion: () => ipcRenderer.invoke('system:get-version'),
-<<<<<<< HEAD
   getUserRole: (userId) => ipcRenderer.invoke('auth:get-user-role', userId),
   updateUserRole: (userId, newRole) => ipcRenderer.invoke('auth:update-user-role', userId, newRole),
-=======
->>>>>>> origin/main
 
   // Navigation
   gotoDashboard: () => ipcRenderer.invoke('nav:navigate-to', 'dashboard'),
@@ -32,10 +29,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.send('window:close'),
 
   // Student Data
-<<<<<<< HEAD
   createStudent: (studentData) => ipcRenderer.invoke('create-student', studentData),
-=======
->>>>>>> origin/main
   saveStudent: (studentData) => ipcRenderer.invoke('save-student', studentData),
   getAllStudents: () => ipcRenderer.invoke('get-all-students'),
   getStudentsPaginated: (page, pageSize, searchTerm, gradeFilter, rfidFilter) => 
@@ -64,7 +58,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Attendance Statistics
   getTodayAttendanceStats: () => ipcRenderer.invoke('get-today-attendance-stats'),
-<<<<<<< HEAD
 
   // Export functionality
   exportStudentsExcel: (students) => ipcRenderer.invoke('export-students-excel', students),
@@ -73,9 +66,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getUniqueSections: (gradeLevel) => ipcRenderer.invoke('get-unique-sections', gradeLevel),
   exportSF2Attendance: (gradeLevel, section) => ipcRenderer.invoke('export-sf2-attendance', gradeLevel, section),
 
-=======
-  
->>>>>>> origin/main
   // RFID Scanning
   startRfidScan: () => ipcRenderer.send('rfid:start-scan'),
   stopRfidScan: () => ipcRenderer.send('rfid:stop-scan'),
