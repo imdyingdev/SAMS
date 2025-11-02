@@ -203,15 +203,18 @@ function updateLogsSummary(summary) {
 
 function renderLogs(logs) {
     const logsList = document.getElementById('logs-list');
-    
+
     if (!logsList) return;
-    
+
     logsList.innerHTML = '';
-    
+
     logs.forEach(log => {
         const logEntryHTML = renderLogEntry(log);
         logsList.insertAdjacentHTML('beforeend', logEntryHTML);
     });
+
+    // Add event listeners for delete icons
+    setupLogDeleteHandlers();
 }
 
 function getStudentInitials(fullName) {
@@ -233,17 +236,17 @@ function renderLogEntry(log) {
     const gradeLevel = log.grade_level || '';
     const rfid = log.rfid || 'N/A';
     const timestamp = new Date(log.timestamp);
-    
+
     const iconClass = getLogTypeClass(logType);
     const actionText = logType === 'time_in' ? 'Time In' : 'Time Out';
-    
+
     // Generate student initials
     const studentInitials = getStudentInitials(studentName);
-    
+
     // Format student display name
-    const displayName = studentName === '(N/A)' ? '(N/A)' : 
+    const displayName = studentName === '(N/A)' ? '(N/A)' :
         gradeLevel ? `${studentName} (${gradeLevel})` : studentName;
-    
+
     // Format timestamp
     const formattedTimestamp = timestamp.toLocaleString('en-US', {
         year: 'numeric',
@@ -254,7 +257,7 @@ function renderLogEntry(log) {
         second: '2-digit',
         hour12: true
     });
-    
+
     return `
         <div class="log-entry">
             <div class="log-icon ${iconClass}">
@@ -273,6 +276,9 @@ function renderLogEntry(log) {
             </div>
             <div class="log-timestamp">
                 ${formattedTimestamp}
+            </div>
+            <div class="action-icons">
+                <i class="fa-solid fa-trash action-icon delete-icon" title="Delete Log" data-log-id="${log.id}"></i>
             </div>
         </div>
     `;
@@ -468,4 +474,183 @@ function createLogsEllipsisElement() {
     element.className = 'page-ellipsis';
     element.textContent = '...';
     return element;
+}
+
+// Setup delete handlers for log entries
+function setupLogDeleteHandlers() {
+    const deleteIcons = document.querySelectorAll('.log-entry .delete-icon');
+
+    deleteIcons.forEach(icon => {
+        icon.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const logId = e.target.getAttribute('data-log-id');
+
+            // Show custom confirmation modal
+            showDeleteConfirmationModal(logId);
+        });
+    });
+}
+
+// Show custom delete confirmation modal
+function showDeleteConfirmationModal(logId) {
+    // Check user role for confirmation bypass
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('user') || '{}');
+    const isSuperAdmin = currentUser.role === 'super-administrator';
+
+    if (isSuperAdmin) {
+        // Super Admin: Delete without confirmation
+        performLogDeletion(logId);
+    } else {
+        // Regular Admin: Show confirmation modal
+        showDeleteConfirmationModalForRegularAdmin(logId);
+    }
+}
+
+// Show delete confirmation modal for regular admins
+function showDeleteConfirmationModalForRegularAdmin(logId) {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.className = 'announcement-modal';
+    modal.id = 'delete-confirmation-modal';
+    modal.style.display = 'flex';
+
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content modal-small';
+
+    // Modal header
+    const modalHeader = document.createElement('div');
+    modalHeader.className = 'modal-header';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Confirm Delete';
+    modalHeader.appendChild(title);
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'modal-close';
+    closeButton.id = 'delete-modal-close';
+    closeButton.innerHTML = '&times;';
+    closeButton.addEventListener('click', () => document.body.removeChild(modal));
+    modalHeader.appendChild(closeButton);
+
+    modalContent.appendChild(modalHeader);
+
+    // Modal body
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+
+    const message = document.createElement('p');
+    message.textContent = 'Are you sure you want to delete this log entry? This action cannot be undone.';
+    modalBody.appendChild(message);
+
+    // Modal actions
+    const modalActions = document.createElement('div');
+    modalActions.className = 'modal-actions';
+
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'btn-cancel';
+    cancelButton.id = 'btn-cancel-delete';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', () => document.body.removeChild(modal));
+
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'btn-delete';
+    deleteButton.id = 'btn-confirm-delete';
+    deleteButton.textContent = 'Delete';
+    deleteButton.addEventListener('click', async () => {
+        // Regular Admin: Show loading and delete
+        deleteButton.disabled = true;
+        deleteButton.textContent = 'Deleting...';
+
+        try {
+            const result = await window.electronAPI.deleteLogEntry(logId);
+
+            if (result.success) {
+                console.log('Log entry deleted successfully:', logId);
+                document.body.removeChild(modal);
+                showSuccessModal();
+                // Reload the current page to refresh the list
+                loadLogs(currentLogsPage);
+            } else {
+                console.error('Failed to delete log entry:', result.message);
+                document.body.removeChild(modal);
+                showErrorModal(result.message || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error deleting log entry:', error);
+            document.body.removeChild(modal);
+            showErrorModal(error.message);
+        }
+    });
+
+    modalActions.appendChild(cancelButton);
+    modalActions.appendChild(deleteButton);
+    modalBody.appendChild(modalActions);
+
+    modalContent.appendChild(modalBody);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+}
+
+// Show success modal after deletion
+function showSuccessModal() {
+    // Create a simple notification instead of a modal
+    const notification = document.createElement('div');
+    notification.className = 'notification notification-success';
+    notification.textContent = 'Log entry deleted successfully!';
+
+    document.body.appendChild(notification);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+        }
+    }, 3000);
+}
+
+// Perform the actual log deletion
+async function performLogDeletion(logId) {
+    try {
+        const result = await window.electronAPI.deleteLogEntry(logId);
+
+        if (result.success) {
+            console.log('Log entry deleted successfully:', logId);
+            showSuccessModal();
+            // Reload the current page to refresh the list
+            loadLogs(currentLogsPage);
+        } else {
+            console.error('Failed to delete log entry:', result.message);
+            showErrorModal(result.message || 'Unknown error');
+        }
+    } catch (error) {
+        console.error('Error deleting log entry:', error);
+        showErrorModal(error.message);
+    }
+}
+
+// Show error modal
+function showErrorModal(errorMessage) {
+    // Create a simple error notification
+    const notification = document.createElement('div');
+    notification.className = 'notification notification-error';
+    notification.textContent = `Failed to delete log entry: ${errorMessage}`;
+
+    document.body.appendChild(notification);
+
+    // Remove after 5 seconds for errors
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+        }
+    }, 5000);
 }

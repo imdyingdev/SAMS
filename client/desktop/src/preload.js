@@ -41,11 +41,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getStudentStatsByGender: () => ipcRenderer.invoke('get-student-stats-by-gender'),
 
   // Logs Data
-  getLogsPaginated: (page, pageSize, searchTerm, logTypeFilter, dateFilter) => 
+  getLogsPaginated: (page, pageSize, searchTerm, logTypeFilter, dateFilter) =>
     ipcRenderer.invoke('get-logs-paginated', page, pageSize, searchTerm, logTypeFilter, dateFilter),
   getRecentLogs: (limit) => ipcRenderer.invoke('get-recent-logs', limit),
-  createLogEntry: (logType, description, rfid, studentId, details) => 
+  createLogEntry: (logType, description, rfid, studentId, details) =>
     ipcRenderer.invoke('create-log-entry', logType, description, rfid, studentId, details),
+  deleteLogEntry: (logId) => ipcRenderer.invoke('delete-log-entry', logId),
     
   // Announcements Data
   createAnnouncement: (announcementData) => ipcRenderer.invoke('create-announcement', announcementData),

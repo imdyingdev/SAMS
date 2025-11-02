@@ -459,12 +459,22 @@ function closeModal() {
 
 // Open delete modal
 function openDeleteModal(id) {
-    const deleteModal = document.getElementById('delete-confirmation-modal');
-    
-    if (!deleteModal) return;
-    
+    // Check user role for confirmation bypass
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('user') || '{}');
+    const isSuperAdmin = currentUser.role === 'super-administrator';
+
     currentDeletingId = id;
-    deleteModal.style.display = 'flex';
+
+    if (isSuperAdmin) {
+        // Super Admin: Delete without confirmation
+        performAnnouncementDeletion();
+    } else {
+        // Regular Admin: Show confirmation modal
+        const deleteModal = document.getElementById('delete-confirmation-modal');
+        if (deleteModal) {
+            deleteModal.style.display = 'flex';
+        }
+    }
 }
 
 // Close delete modal
@@ -581,59 +591,73 @@ async function handleFormSubmit(e) {
 // Confirm delete
 async function confirmDelete() {
     if (!currentDeletingId) return;
-    
+
     const btnConfirm = document.getElementById('btn-confirm-delete');
-    
-    try {
-        // Disable button
-        if (btnConfirm) {
-            btnConfirm.disabled = true;
-            btnConfirm.textContent = 'Deleting...';
-        }
-        
-        // Check if electronAPI is available
-        if (!window.electronAPI || typeof window.electronAPI.deleteAnnouncement !== 'function') {
-            console.warn('Electron API not available. Using mock implementation.');
-            
-            // Simulate a delay
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Remove the announcement from DOM
-            const card = document.querySelector(`.announcement-card[data-id="${currentDeletingId}"]`);
-            if (card) {
-                card.remove();
-                
-                // Check if there are any announcements left in all columns
-                const announcementsList = document.getElementById('announcements-list');
-                const allCards = announcementsList ? announcementsList.querySelectorAll('.announcement-card') : [];
-                if (allCards.length === 0) {
-                    showEmptyState();
-                }
+
+    // Check user role for confirmation bypass
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('user') || '{}');
+    const isSuperAdmin = currentUser.role === 'super-administrator';
+
+    if (isSuperAdmin) {
+        // Super Admin: Delete without confirmation
+        performAnnouncementDeletion();
+        closeDeleteModal();
+    } else {
+        // Regular Admin: Show loading and delete
+        try {
+            // Disable button
+            if (btnConfirm) {
+                btnConfirm.disabled = true;
+                btnConfirm.textContent = 'Deleting...';
             }
-            
+
+            await performAnnouncementDeletion();
             closeDeleteModal();
-            return;
+        } catch (error) {
+            console.error('Error deleting announcement:', error);
+        } finally {
+            // Re-enable button
+            if (btnConfirm) {
+                btnConfirm.disabled = false;
+                btnConfirm.textContent = 'Delete';
+            }
         }
-        
-        // Use actual API if available
-        const result = await window.electronAPI.deleteAnnouncement(currentDeletingId);
-        
-        if (result.success) {
-            console.log('Announcement deleted successfully');
-            closeDeleteModal();
-            loadAnnouncements(); // Reload announcements
-        } else {
-            throw new Error('Failed to delete announcement');
+    }
+}
+
+// Perform the actual announcement deletion
+async function performAnnouncementDeletion() {
+    // Check if electronAPI is available
+    if (!window.electronAPI || typeof window.electronAPI.deleteAnnouncement !== 'function') {
+        console.warn('Electron API not available. Using mock implementation.');
+
+        // Simulate a delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Remove the announcement from DOM
+        const card = document.querySelector(`.announcement-card[data-id="${currentDeletingId}"]`);
+        if (card) {
+            card.remove();
+
+            // Check if there are any announcements left in all columns
+            const announcementsList = document.getElementById('announcements-list');
+            const allCards = announcementsList ? announcementsList.querySelectorAll('.announcement-card') : [];
+            if (allCards.length === 0) {
+                showEmptyState();
+            }
         }
-    } catch (error) {
-        console.error('Error deleting announcement:', error);
-        alert(error.message || 'Failed to delete announcement. Please try again.');
-    } finally {
-        // Re-enable button
-        if (btnConfirm) {
-            btnConfirm.disabled = false;
-            btnConfirm.textContent = 'Delete';
-        }
+
+        return;
+    }
+
+    // Use actual API if available
+    const result = await window.electronAPI.deleteAnnouncement(currentDeletingId);
+
+    if (result.success) {
+        console.log('Announcement deleted successfully');
+        loadAnnouncements(); // Reload announcements
+    } else {
+        throw new Error('Failed to delete announcement');
     }
 }
 

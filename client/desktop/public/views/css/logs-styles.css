@@ -357,6 +357,35 @@
     white-space: nowrap;
 }
 
+.action-icons {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.action-icon {
+    font-size: 1rem;
+    color: var(--text-white-muted);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.action-icon:hover {
+    opacity: 1;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    transform: scale(1.1);
+}
+
+.delete-icon:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
 
 .student-info {
     font-size: 0.875rem;
@@ -431,6 +460,46 @@
 .logs-container .table-options {
     margin: 0 !important; /* Remove ALL margins for clean flexbox distribution */
     flex-shrink: 0; /* Prevent pagination from shrinking */
+}
+
+/* Export section styling for logs */
+.export-section {
+    background: var(--glass-light);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex: 0.5;
+    border-radius: var(--border-radius);
+    height: 60px;
+}
+
+.export-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.export-btn {
+    background: white !important;
+    color: #333 !important;
+    border: none;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--border-radius);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.export-btn:hover {
+    background: #f8f9fa !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* Empty state for logs */

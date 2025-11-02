@@ -137,30 +137,126 @@ async function updateUserRole() {
             return;
         }
 
-        // Update role in database
-        const response = await window.electronAPI.updateUserRole(currentUser.id, newRole);
+        // Show confirmation modal for role change
+        showRoleChangeConfirmationModal(newRole, async () => {
+            try {
+                // Update role in database
+                const response = await window.electronAPI.updateUserRole(currentUser.id, newRole);
 
-        if (response.success) {
-            // Update localStorage/session
-            currentUser.role = newRole;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            localStorage.setItem('user', JSON.stringify(currentUser)); // Update both keys
+                if (response.success) {
+                    // Update localStorage/session
+                    currentUser.role = newRole;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    localStorage.setItem('user', JSON.stringify(currentUser)); // Update both keys
 
-            // Update header display
-            updateHeaderRoleDisplay(newRole);
+                    // Update header display
+                    updateHeaderRoleDisplay(newRole);
 
-            showNotification('User role updated successfully!', 'success');
-        } else {
-            showNotification('Failed to update user role: ' + response.message, 'error');
-            // Revert the dropdown to previous value
-            loadCurrentSettings();
-        }
+                    showNotification('User role updated successfully!', 'success');
+                } else {
+                    showNotification('Failed to update user role: ' + response.message, 'error');
+                    // Revert the dropdown to previous value
+                    loadCurrentSettings();
+                }
+            } catch (error) {
+                console.error('Error updating user role:', error);
+                showNotification('An error occurred while updating the role.', 'error');
+                // Revert the dropdown to previous value
+                loadCurrentSettings();
+            }
+        });
     } catch (error) {
         console.error('Error updating user role:', error);
         showNotification('An error occurred while updating the role.', 'error');
         // Revert the dropdown to previous value
         loadCurrentSettings();
     }
+}
+
+// Show role change confirmation modal
+function showRoleChangeConfirmationModal(newRole, onConfirm) {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.className = 'announcement-modal';
+    modal.id = 'role-change-modal';
+    modal.style.display = 'flex';
+
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content modal-small';
+
+    // Modal header
+    const modalHeader = document.createElement('div');
+    modalHeader.className = 'modal-header';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Confirm Role Change';
+    modalHeader.appendChild(title);
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'modal-close';
+    closeButton.id = 'role-modal-close';
+    closeButton.innerHTML = '&times;';
+    closeButton.addEventListener('click', () => document.body.removeChild(modal));
+    modalHeader.appendChild(closeButton);
+
+    modalContent.appendChild(modalHeader);
+
+    // Modal body
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+
+    const roleDisplay = newRole === 'super-administrator' ? 'Super Administrator' : 'Administrator';
+
+    const message = document.createElement('p');
+    message.innerHTML = `Are you sure you want to switch to <strong>${roleDisplay}</strong> mode?`;
+    modalBody.appendChild(message);
+
+    const warning = document.createElement('p');
+    if (newRole === 'super-administrator') {
+        warning.innerHTML = '<strong>⚠️ Warning:</strong> Super Administrator mode removes all confirmation dialogs for enhanced efficiency, but increases risk of accidental actions.';
+        warning.style.cssText = 'color: #ef4444; font-size: 0.9rem; margin-top: 1rem;';
+    } else {
+        warning.innerHTML = '<strong>✅ Safe Mode:</strong> Administrator mode keeps all confirmation dialogs for data safety.';
+        warning.style.cssText = 'color: #10B981; font-size: 0.9rem; margin-top: 1rem;';
+    }
+    modalBody.appendChild(warning);
+
+    // Modal actions
+    const modalActions = document.createElement('div');
+    modalActions.className = 'modal-actions';
+
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'btn-cancel';
+    cancelButton.id = 'btn-cancel-role-change';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', () => document.body.removeChild(modal));
+
+    const confirmButton = document.createElement('button');
+    confirmButton.type = 'button';
+    confirmButton.className = newRole === 'super-administrator' ? 'btn-delete' : 'btn-submit';
+    confirmButton.id = 'btn-confirm-role-change';
+    confirmButton.textContent = 'Switch Role';
+    confirmButton.addEventListener('click', () => {
+        document.body.removeChild(modal);
+        onConfirm();
+    });
+
+    modalActions.appendChild(cancelButton);
+    modalActions.appendChild(confirmButton);
+    modalBody.appendChild(modalActions);
+
+    modalContent.appendChild(modalBody);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
 }
 
 

@@ -292,6 +292,19 @@ ipcMain.handle('save-student', async (event, studentData) => {
   }
 });
 
+// Create student handler
+ipcMain.handle('create-student', async (event, studentData) => {
+  try {
+    console.log('IPC: Creating new student');
+    const result = await createStudent(studentData);
+    return result;
+  } catch (error) {
+    console.error('IPC Error: Failed to create student', error);
+    // Forward the specific error message to the renderer process
+    throw new Error(error.message || 'An unknown error occurred on the server.');
+  }
+});
+
 // Enhanced error handling
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
@@ -724,6 +737,41 @@ ipcMain.handle('search-announcements', async (event, searchTerm, limit = 50, off
   }
 });
 
+// Delete log entry handler
+ipcMain.handle('delete-log-entry', async (event, logId) => {
+  try {
+    console.log(`IPC: Deleting log entry with ID: ${logId}`);
+
+    // Query to delete the log entry from rfid_logs table
+    const deleteQuery = `
+      DELETE FROM rfid_logs
+      WHERE id = $1
+      RETURNING id
+    `;
+
+    const result = await query(deleteQuery, [logId]);
+
+    if (result.rows.length === 0) {
+      return {
+        success: false,
+        message: 'Log entry not found'
+      };
+    }
+
+    return {
+      success: true,
+      message: 'Log entry deleted successfully'
+    };
+
+  } catch (error) {
+    console.error('IPC: Failed to delete log entry:', error);
+    return {
+      success: false,
+      message: 'Failed to delete log entry'
+    };
+  }
+});
+
 // === ATTENDANCE STATISTICS IPC HANDLERS ===
 
 // Get today's attendance statistics handler
@@ -760,6 +808,160 @@ ipcMain.handle('get-unique-sections', async (event, gradeLevel) => {
     return { success: true, sections: sections };
   } catch (error) {
     console.error('IPC: Failed to get unique sections:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Export students Excel handler
+ipcMain.handle('export-students-excel', async (event, students) => {
+  try {
+    console.log('IPC: Exporting students to Excel');
+
+    if (!students || students.length === 0) {
+      return { success: false, message: 'No students data provided for export' };
+    }
+
+    // Create Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Students');
+
+    // Set column headers
+    worksheet.columns = [
+      { header: 'LRN', key: 'lrn', width: 15 },
+      { header: 'First Name', key: 'first_name', width: 20 },
+      { header: 'Middle Name', key: 'middle_name', width: 20 },
+      { header: 'Last Name', key: 'last_name', width: 20 },
+      { header: 'Suffix', key: 'suffix', width: 10 },
+      { header: 'Grade Level', key: 'grade_level', width: 15 },
+      { header: 'Section', key: 'section', width: 15 },
+      { header: 'Gender', key: 'gender', width: 10 },
+      { header: 'RFID', key: 'rfid', width: 20 },
+      { header: 'Created At', key: 'created_at', width: 20 }
+    ];
+
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE6E6FA' }
+    };
+
+    // Add student data
+    students.forEach(student => {
+      worksheet.addRow({
+        lrn: student.lrn || '',
+        first_name: student.first_name || '',
+        middle_name: student.middle_name || '',
+        last_name: student.last_name || '',
+        suffix: student.suffix || '',
+        grade_level: student.grade_level || '',
+        section: student.section || '',
+        gender: student.gender || '',
+        rfid: student.rfid || 'Not Assigned',
+        created_at: student.created_at ? new Date(student.created_at).toLocaleDateString() : ''
+      });
+    });
+
+    // Show save dialog
+    const { dialog } = await import('electron');
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Students Export',
+      defaultPath: `students_export_${new Date().toISOString().split('T')[0]}.xlsx`,
+      filters: [
+        { name: 'Excel Files', extensions: ['xlsx'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (result.canceled) {
+      return { success: false, message: 'Export cancelled by user' };
+    }
+
+    // Write file
+    await workbook.xlsx.writeFile(result.filePath);
+
+    console.log('Students export completed successfully:', result.filePath);
+    return { success: true, filePath: result.filePath };
+
+  } catch (error) {
+    console.error('IPC: Failed to export students:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Export logs Excel handler
+ipcMain.handle('export-logs-excel', async (event) => {
+  try {
+    console.log('IPC: Exporting logs to Excel');
+
+    // Get all logs (not paginated) for export
+    const logsResult = await getLogsPaginated(1, 10000, '', '', '');
+    const logs = logsResult.logs || [];
+
+    if (logs.length === 0) {
+      return { success: false, message: 'No logs found to export' };
+    }
+
+    // Create Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Activity Logs');
+
+    // Set column headers
+    worksheet.columns = [
+      { header: 'Timestamp', key: 'timestamp', width: 20 },
+      { header: 'Log Type', key: 'log_type', width: 15 },
+      { header: 'Student Name', key: 'student_name', width: 30 },
+      { header: 'Grade Level', key: 'grade_level', width: 15 },
+      { header: 'RFID', key: 'rfid', width: 20 },
+      { header: 'Description', key: 'description', width: 40 },
+      { header: 'Details', key: 'details', width: 30 }
+    ];
+
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE6E6FA' }
+    };
+
+    // Add log data
+    logs.forEach(log => {
+      worksheet.addRow({
+        timestamp: log.timestamp ? new Date(log.timestamp).toLocaleString() : '',
+        log_type: log.log_type || '',
+        student_name: log.student_name || '',
+        grade_level: log.grade_level || '',
+        rfid: log.rfid || '',
+        description: log.description || '',
+        details: log.details || ''
+      });
+    });
+
+    // Show save dialog
+    const { dialog } = await import('electron');
+    const dialogResult = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Logs Export',
+      defaultPath: `activity_logs_${new Date().toISOString().split('T')[0]}.xlsx`,
+      filters: [
+        { name: 'Excel Files', extensions: ['xlsx'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (dialogResult.canceled) {
+      return { success: false, message: 'Export cancelled by user' };
+    }
+
+    // Write file
+    await workbook.xlsx.writeFile(dialogResult.filePath);
+
+    console.log('Logs export completed successfully:', dialogResult.filePath);
+    return { success: true, filePath: dialogResult.filePath };
+
+  } catch (error) {
+    console.error('IPC: Failed to export logs:', error);
     return { success: false, message: error.message };
   }
 });

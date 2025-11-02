@@ -298,29 +298,160 @@ function renderStudents(students) {
 // Handle delete student
 async function handleDeleteStudent(student) {
     const fullName = `${student.first_name || ''} ${student.middle_name ? student.middle_name + ' ' : ''}${student.last_name || ''} ${student.suffix || ''}`.trim();
-    
-    if (confirm(`Are you sure you want to delete ${fullName}?\n\nThis action cannot be undone.`)) {
-        try {
-            if (window.electronAPI) {
-                const result = await window.electronAPI.deleteStudent(student.id);
-                
-                if (result && result.success) {
-                    console.log('Student deleted successfully:', student.id);
-                    // Reload the current page to refresh the list
-                    loadStudents(currentPage);
-                } else {
-                    console.error('Failed to delete student:', result?.message);
-                    alert(`Failed to delete student: ${result?.message || 'Unknown error'}`);
-                }
+
+    // Check user role for confirmation bypass
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('user') || '{}');
+    const isSuperAdmin = currentUser.role === 'super-administrator';
+
+    if (isSuperAdmin) {
+        // Super Admin: Delete without confirmation
+        performStudentDeletion(student, fullName);
+    } else {
+        // Regular Admin: Show confirmation modal
+        showDeleteConfirmationModal(student, fullName);
+    }
+}
+
+// Perform the actual student deletion
+async function performStudentDeletion(student, fullName) {
+    try {
+        if (window.electronAPI) {
+            const result = await window.electronAPI.deleteStudent(student.id);
+
+            if (result && result.success) {
+                console.log('Student deleted successfully:', student.id);
+                showSuccessModal();
+                // Reload the current page to refresh the list
+                loadStudents(currentPage);
             } else {
-                console.error('Electron API not available');
-                alert('Cannot delete student: Application API not available');
+                console.error('Failed to delete student:', result?.message);
+                showErrorModal(result?.message || 'Unknown error');
             }
+        } else {
+            console.error('Electron API not available');
+            showErrorModal('Application API not available');
+        }
+    } catch (error) {
+        console.error('Error deleting student:', error);
+        showErrorModal(error.message);
+    }
+}
+
+// Show custom delete confirmation modal for students
+function showDeleteConfirmationModal(student, fullName) {
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.className = 'announcement-modal';
+    modal.id = 'delete-confirmation-modal';
+    modal.style.display = 'flex';
+
+    // Create modal content
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content modal-small';
+
+    // Modal header
+    const modalHeader = document.createElement('div');
+    modalHeader.className = 'modal-header';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Confirm Delete';
+    modalHeader.appendChild(title);
+
+    const closeButton = document.createElement('button');
+    closeButton.className = 'modal-close';
+    closeButton.id = 'delete-modal-close';
+    closeButton.innerHTML = '&times;';
+    closeButton.addEventListener('click', () => document.body.removeChild(modal));
+    modalHeader.appendChild(closeButton);
+
+    modalContent.appendChild(modalHeader);
+
+    // Modal body
+    const modalBody = document.createElement('div');
+    modalBody.className = 'modal-body';
+
+    const message = document.createElement('p');
+    message.textContent = `Are you sure you want to delete ${fullName}? This action cannot be undone.`;
+    modalBody.appendChild(message);
+
+    // Modal actions
+    const modalActions = document.createElement('div');
+    modalActions.className = 'modal-actions';
+
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'btn-cancel';
+    cancelButton.id = 'btn-cancel-delete';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', () => document.body.removeChild(modal));
+
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'btn-delete';
+    deleteButton.id = 'btn-confirm-delete';
+    deleteButton.textContent = 'Delete';
+    deleteButton.addEventListener('click', async () => {
+        // Disable button and show loading
+        deleteButton.disabled = true;
+        deleteButton.textContent = 'Deleting...';
+
+        try {
+            await performStudentDeletion(student, fullName);
+            document.body.removeChild(modal);
         } catch (error) {
             console.error('Error deleting student:', error);
-            alert(`Error deleting student: ${error.message}`);
+            document.body.removeChild(modal);
         }
-    }
+    });
+
+    modalActions.appendChild(cancelButton);
+    modalActions.appendChild(deleteButton);
+    modalBody.appendChild(modalActions);
+
+    modalContent.appendChild(modalBody);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Close modal when clicking outside
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+}
+
+// Show success modal after deletion
+function showSuccessModal() {
+    // Create a simple notification instead of a modal
+    const notification = document.createElement('div');
+    notification.className = 'notification notification-success';
+    notification.textContent = 'Student deleted successfully!';
+
+    document.body.appendChild(notification);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+        }
+    }, 3000);
+}
+
+// Show error modal
+function showErrorModal(errorMessage) {
+    // Create a simple error notification
+    const notification = document.createElement('div');
+    notification.className = 'notification notification-error';
+    notification.textContent = `Failed to delete student: ${errorMessage}`;
+
+    document.body.appendChild(notification);
+
+    // Remove after 5 seconds for errors
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+        }
+    }, 5000);
 }
 
 // Trigger search/filter with pagination
@@ -418,15 +549,27 @@ async function showStudentInfo(student) {
         isStudentInfoViewActive = true;
 
         // Populate form with student data
-        document.getElementById('student-id').value = student.id || '';
-        document.getElementById('student-lrn').value = student.lrn || '';
-        document.getElementById('student-grade-level').value = student.grade_level || '';
-        document.getElementById('student-section').value = student.section || '';
-        document.getElementById('student-first-name').value = student.first_name || '';
-        document.getElementById('student-middle-name').value = student.middle_name || '';
-        document.getElementById('student-last-name').value = student.last_name || '';
-        document.getElementById('student-suffix').value = student.suffix || '';
-        document.getElementById('student-rfid').value = student.rfid || '';
+        const studentIdField = document.getElementById('student-id');
+        const studentLrnField = document.getElementById('student-lrn');
+        const studentGradeLevelField = document.getElementById('student-grade-level');
+        const studentSectionField = document.getElementById('student-section');
+        const studentFirstNameField = document.getElementById('student-first-name');
+        const studentMiddleNameField = document.getElementById('student-middle-name');
+        const studentLastNameField = document.getElementById('student-last-name');
+        const studentSuffixField = document.getElementById('student-suffix');
+        const studentGenderField = document.getElementById('student-gender');
+        const studentRfidField = document.getElementById('student-rfid');
+
+        if (studentIdField) studentIdField.value = student.id || '';
+        if (studentLrnField) studentLrnField.value = student.lrn || '';
+        if (studentGradeLevelField) studentGradeLevelField.value = student.grade_level || '';
+        if (studentSectionField) studentSectionField.value = student.section || '';
+        if (studentFirstNameField) studentFirstNameField.value = student.first_name || '';
+        if (studentMiddleNameField) studentMiddleNameField.value = student.middle_name || '';
+        if (studentLastNameField) studentLastNameField.value = student.last_name || '';
+        if (studentSuffixField) studentSuffixField.value = student.suffix || '';
+        if (studentGenderField) studentGenderField.value = student.gender || '';
+        if (studentRfidField) studentRfidField.value = student.rfid || '';
 
         // Set up button event listeners
         setupStudentInfoButtons(originalContent, studentTableContainer);
@@ -493,16 +636,17 @@ function setupStudentInfoButtons(originalContent, studentTableContainer) {
     if (saveButton) {
         saveButton.addEventListener('click', async () => {
             try {
-                const studentId = document.getElementById('student-id').value;
+                const studentId = document.getElementById('student-id')?.value;
                 const updatedData = {
-                    lrn: document.getElementById('student-lrn').value,
-                    grade_level: document.getElementById('student-grade-level').value,
-                    section: document.getElementById('student-section').value,
-                    first_name: document.getElementById('student-first-name').value,
-                    middle_name: document.getElementById('student-middle-name').value,
-                    last_name: document.getElementById('student-last-name').value,
-                    suffix: document.getElementById('student-suffix').value,
-                    rfid: document.getElementById('student-rfid').value
+                    lrn: document.getElementById('student-lrn')?.value,
+                    grade_level: document.getElementById('student-grade-level')?.value,
+                    section: document.getElementById('student-section')?.value,
+                    first_name: document.getElementById('student-first-name')?.value,
+                    middle_name: document.getElementById('student-middle-name')?.value,
+                    last_name: document.getElementById('student-last-name')?.value,
+                    suffix: document.getElementById('student-suffix')?.value,
+                    gender: document.getElementById('student-gender')?.value,
+                    rfid: document.getElementById('student-rfid')?.value
                 };
 
                 if (window.electronAPI) {

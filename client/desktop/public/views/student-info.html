@@ -29,7 +29,16 @@
             </div>
         </div>
 
-        <div class="row row-2">
+        <div class="row row-4">
+            <div class="field-group">
+                <label class="field-label" for="student-gender">Gender</label>
+                <select id="student-gender" class="field-input">
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                </select>
+            </div>
+
             <div class="field-group">
                 <label class="field-label" for="student-grade-level">Grade Level</label>
                 <select id="student-grade-level" class="field-input">
@@ -45,18 +54,23 @@
             </div>
 
             <div class="field-group">
-                <label class="field-label" for="student-lrn">Learner Reference Number (LRN)</label>
+                <label class="field-label" for="student-section">Section</label>
+                <input type="text" id="student-section" class="field-input" placeholder="Enter section">
+            </div>
+
+            <div class="field-group">
+                <label class="field-label" for="student-lrn">Learner Reference Number</label>
                 <input type="text" id="student-lrn" class="field-input" placeholder="Enter LRN">
             </div>
         </div>
 
         <div class="row row-1">
             <div class="field-group full-width">
-                <label class="field-label">RFID 
+                <label class="field-label">RFID
                     <span class="rfid-help-wrapper">
                         <i class="fa-solid fa-question rfid-help-icon" id="rfid-help-icon" title="Focus to the Input and just tap to replace the existing rfid value"></i>
                         <div class="rfid-tooltip" id="rfid-tooltip" style="display: none;">
-                            If you’re using an RFID reader, click the field and scan a new tag to automatically replace the current value.
+                            If you're using an RFID reader, click the field and scan a new tag to automatically replace the current value.
                         </div>
                     </span>
                 </label>

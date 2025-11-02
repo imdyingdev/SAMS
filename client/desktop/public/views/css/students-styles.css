@@ -546,9 +546,9 @@
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
 }
 
-.export-section button {
-    background: transparent;
-    color: white;
+.export-btn {
+    background: white !important;
+    color: #333 !important;
     border: none;
     width: 100%;
     height: 100%;
@@ -557,6 +557,12 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
+}
+
+.export-btn:hover {
+    background: #f8f9fa !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .results-info {

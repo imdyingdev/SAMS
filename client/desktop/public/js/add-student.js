@@ -52,6 +52,7 @@ function setupAddStudentButtons() {
                     middle_name: document.getElementById('student-middle-name').value.trim(),
                     last_name: document.getElementById('student-last-name').value.trim(),
                     suffix: document.getElementById('student-suffix').value.trim(),
+                    gender: document.getElementById('student-gender').value,
                     rfid: document.getElementById('student-rfid').value.trim()
                 };
 
