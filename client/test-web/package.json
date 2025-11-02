@@ -1,0 +1,8 @@
+{
+  "name": "test-web",
+  "version": "1.0.0",
+  "description": "Simple test for Vercel database connection",
+  "dependencies": {
+    "pg": "^8.11.3"
+  }
+}
