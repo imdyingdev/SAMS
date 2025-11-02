@@ -5,7 +5,6 @@
 class VerificationStore {
   constructor() {
     this.store = new Map();
-<<<<<<< HEAD
     // Initialize cleanup interval
     this.startCleanupInterval();
   }
@@ -28,8 +27,6 @@ class VerificationStore {
       clearInterval(this.cleanupInterval);
       this.cleanupInterval = undefined;
     }
-=======
->>>>>>> origin/main
   }
 
   /**
@@ -104,16 +101,8 @@ class VerificationStore {
   }
 }
 
-<<<<<<< HEAD
 // Export a singleton instance
 const verificationStore = new VerificationStore();
 module.exports = verificationStore;
-=======
-// Clean up expired codes every 5 minutes
-setInterval(() => {
-  const store = new VerificationStore();
-  store.cleanup();
-}, 5 * 60 * 1000);
->>>>>>> origin/main
 
 module.exports = VerificationStore;

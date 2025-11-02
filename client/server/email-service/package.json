@@ -2,6 +2,10 @@
   "name": "email-service",
   "version": "1.0.0",
   "description": "Email verification service for SAMS using Resend API",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
   "dependencies": {
     "resend": "^3.2.0",
     "dotenv": "^16.3.1"
