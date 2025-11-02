@@ -1,4 +1,4 @@
-const { getPool, initializeDatabase } = require('../../lib/db');
+const { getPool, initializeDatabase } = require('../lib/db');
 
 module.exports = async (req, res) => {
   // Enable CORS
@@ -9,7 +9,12 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Get ID from query parameter
   const { id } = req.query;
+  
+  if (!id) {
+    return res.status(400).json({ error: 'ID parameter is required' });
+  }
 
   try {
     const pool = getPool();

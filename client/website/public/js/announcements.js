@@ -20,8 +20,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             }
             
-            // Fetch the latest 3 announcements from the API
-            const response = await fetch('/api/announcements/latest');
+            // Fetch the latest 3 announcements from the API (using flat structure)
+            const response = await fetch('/api/announcements-latest');
             
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
