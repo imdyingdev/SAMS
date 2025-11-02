@@ -322,7 +322,6 @@ function getLogDescription(log) {
 export function setupLogsSearchAndFilter() {
     // No search and filter UI, just setup pagination controls
     setupLogsPaginationControls();
-<<<<<<< HEAD
     setupLogsExportButton();
 }
 
@@ -348,8 +347,6 @@ function setupLogsExportButton() {
             }
         });
     }
-=======
->>>>>>> origin/main
 }
 
 // Setup pagination control event listeners

@@ -18,7 +18,6 @@ export async function loadSidebar(activePage = 'home') {
         }
         
         sidebarContainer.innerHTML = sidebarHTML;
-<<<<<<< HEAD
 
         // Set active page - navigation is handled by SPA system in app.js
         setActivePage(activePage);
@@ -28,12 +27,6 @@ export async function loadSidebar(activePage = 'home') {
             window.initializeSidebar();
         }
 
-=======
-        
-        // Set active page - navigation is handled by SPA system in app.js
-        setActivePage(activePage);
-        
->>>>>>> origin/main
         console.log(`Sidebar loaded successfully with active page: ${activePage}`);
     } catch (error) {
         console.error('Failed to load sidebar:', error);

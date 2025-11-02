@@ -265,10 +265,7 @@ function renderStudents(students) {
             <td>${student.lrn || 'N/A'}</td>
             <td>${fullName}</td>
             <td>${student.grade_level || 'N/A'}</td>
-<<<<<<< HEAD
             <td>${student.section || 'N/A'}</td>
-=======
->>>>>>> origin/main
             <td>${rfidStatus}</td>
             <td class="action-icons">
                 <i class="fa-solid fa-pen-to-square action-icon edit-icon" title="Edit"></i>
@@ -424,10 +421,7 @@ async function showStudentInfo(student) {
         document.getElementById('student-id').value = student.id || '';
         document.getElementById('student-lrn').value = student.lrn || '';
         document.getElementById('student-grade-level').value = student.grade_level || '';
-<<<<<<< HEAD
         document.getElementById('student-section').value = student.section || '';
-=======
->>>>>>> origin/main
         document.getElementById('student-first-name').value = student.first_name || '';
         document.getElementById('student-middle-name').value = student.middle_name || '';
         document.getElementById('student-last-name').value = student.last_name || '';
@@ -503,10 +497,7 @@ function setupStudentInfoButtons(originalContent, studentTableContainer) {
                 const updatedData = {
                     lrn: document.getElementById('student-lrn').value,
                     grade_level: document.getElementById('student-grade-level').value,
-<<<<<<< HEAD
                     section: document.getElementById('student-section').value,
-=======
->>>>>>> origin/main
                     first_name: document.getElementById('student-first-name').value,
                     middle_name: document.getElementById('student-middle-name').value,
                     last_name: document.getElementById('student-last-name').value,
@@ -767,14 +758,9 @@ async function handleExport() {
 
         // Create export options
         const exportOptions = [
-<<<<<<< HEAD
             { label: 'Export as Excel', action: () => exportAsExcel(result.students) },
             { label: 'Export as PDF', action: () => exportAsPDF(result.students) },
             { label: 'Export SF2 Attendance', action: () => showSF2ExportModal() }
-=======
-            { label: 'Export as CSV', action: () => exportAsCSV(result.students) },
-            { label: 'Export as PDF', action: () => exportAsPDF(result.students) }
->>>>>>> origin/main
         ];
 
         // Show export dialog
@@ -819,10 +805,6 @@ function showExportDialog(options) {
     modalContent.style.cssText = `
         background: white;
         padding: 20px;
-<<<<<<< HEAD
-=======
-        border-radius: 8px;
->>>>>>> origin/main
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
         min-width: 300px;
     `;
@@ -843,10 +825,6 @@ function showExportDialog(options) {
             padding: 10px;
             margin: 5px 0;
             border: 1px solid #ddd;
-<<<<<<< HEAD
-=======
-            border-radius: 4px;
->>>>>>> origin/main
             background: #f8f9fa;
             cursor: pointer;
             transition: background 0.2s;
@@ -869,10 +847,6 @@ function showExportDialog(options) {
         padding: 10px;
         margin: 15px 0 0 0;
         border: 1px solid #6c757d;
-<<<<<<< HEAD
-=======
-        border-radius: 4px;
->>>>>>> origin/main
         background: #6c757d;
         color: white;
         cursor: pointer;
@@ -884,7 +858,6 @@ function showExportDialog(options) {
     document.body.appendChild(modal);
 }
 
-<<<<<<< HEAD
 // Show export success modal
 function showExportSuccessModal(filePath) {
     // Create modal overlay
@@ -980,9 +953,6 @@ function showExportSuccessModal(filePath) {
 }
 
 // Export as CSV (working fallback)
-=======
-// Export as CSV
->>>>>>> origin/main
 function exportAsCSV(students) {
     const headers = ['LRN', 'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Grade Level', 'RFID'];
     const csvContent = [
@@ -1001,7 +971,6 @@ function exportAsCSV(students) {
     downloadFile(csvContent, 'students.csv', 'text/csv');
 }
 
-<<<<<<< HEAD
 // Export as Excel using main process (shows save dialog)
 async function exportAsExcel(students) {
     try {
@@ -1026,8 +995,6 @@ async function exportAsExcel(students) {
     }
 }
 
-=======
->>>>>>> origin/main
 // Export as PDF using browser print
 function exportAsPDF(students) {
     // Create a printable HTML document
@@ -1145,7 +1112,6 @@ function generatePrintableHTML(students) {
     `;
 }
 
-<<<<<<< HEAD
 // Show SF2 export modal
 async function showSF2ExportModal() {
     try {
@@ -1363,8 +1329,6 @@ async function showSF2ExportModal() {
     }
 }
 
-=======
->>>>>>> origin/main
 // Helper function to download file
 function downloadFile(content, filename, mimeType) {
     const blob = new Blob([content], { type: mimeType });
