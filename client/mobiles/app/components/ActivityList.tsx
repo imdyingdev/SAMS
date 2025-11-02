@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Animated, Vibration } from 'react-native';
 import { Colors, Typography, Spacing, BorderRadius } from '../styles/colors';
 import { supabase } from '../services/supabase';
+import * as Notifications from 'expo-notifications';
+import { registerForPushNotifications, scheduleActivityNotification } from '../utils/notifications';
 
 interface RfidLog {
   id: string;
@@ -44,6 +46,7 @@ const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, load
   const [activityData, setActivityData] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(loading);
   const [error, setError] = useState<string | null>(null);
+  const previousLogCountRef = useRef<number>(0);
 
   // Function to transform database data to display format
   const transformActivityData = (logs: (RfidLog & { student_name: string })[]): ActivityItem[] => {
@@ -179,11 +182,39 @@ const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, load
     }
   }, [studentRfid, selectedDate, showAllRecords]); // Add dependency array for useCallback
 
+  // Request notification permissions on mount
+  useEffect(() => {
+    registerForPushNotifications();
+  }, []);
+
   // Load data on component mount and when studentRfid or selectedDate changes
   useEffect(() => {
     setIsLoading(true);
     fetchActivityData();
   }, [studentRfid, selectedDate, showAllRecords]);
+
+  // Detect new logs and trigger notification
+  useEffect(() => {
+    if (activityData.length > 0 && previousLogCountRef.current > 0) {
+      // Check if there are new logs (count increased)
+      if (activityData.length > previousLogCountRef.current) {
+        const newLog = activityData[0]; // Most recent log is first
+        
+        // Trigger vibration
+        Vibration.vibrate([0, 250, 250, 250]); // Pattern: wait 0ms, vibrate 250ms, wait 250ms, vibrate 250ms
+        
+        // Schedule notification
+        scheduleActivityNotification(
+          newLog.student_name || 'Unknown Student',
+          newLog.tap_type,
+          newLog.time
+        );
+      }
+    }
+    
+    // Update the previous count
+    previousLogCountRef.current = activityData.length;
+  }, [activityData]);
 
   // Set up real-time subscription for rfid_logs
   useEffect(() => {

@@ -1,4 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Create modal element
+    const modal = createModal();
+    document.body.appendChild(modal);
     // Function to fetch announcements from API
     async function fetchAnnouncements() {
         try {
@@ -96,6 +99,17 @@ document.addEventListener('DOMContentLoaded', function() {
         announcements.forEach(announcement => {
             const card = createAnnouncementCard(announcement);
             announcementsListContainer.appendChild(card);
+            
+            // Check if content overflows and remove fade effect if not
+            const content = card.querySelector('.announcement-content');
+            if (content.scrollHeight <= content.clientHeight) {
+                card.classList.add('no-overflow');
+            }
+            
+            // Add click handler to open modal
+            card.addEventListener('click', () => {
+                openModal(announcement);
+            });
         });
     }
 
@@ -142,6 +156,84 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 
+    // Create modal structure
+    function createModal() {
+        const modal = document.createElement('div');
+        modal.className = 'announcement-modal';
+        modal.innerHTML = `
+            <div class="announcement-modal-content">
+                <button class="announcement-modal-close">&times;</button>
+                <div class="announcement-modal-header">
+                    <h2 class="announcement-modal-title"></h2>
+                </div>
+                <div class="announcement-modal-body"></div>
+                <div class="announcement-modal-footer">
+                    <div class="announcement-modal-author">
+                        <i class='bx bx-user'></i>
+                        <span class="modal-author-name"></span>
+                    </div>
+                    <div class="announcement-modal-date">
+                        <i class='bx bx-calendar'></i>
+                        <span class="modal-date-text"></span>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Close modal on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Close modal on close button click
+        const closeBtn = modal.querySelector('.announcement-modal-close');
+        closeBtn.addEventListener('click', closeModal);
+        
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeModal();
+            }
+        });
+        
+        return modal;
+    }
+    
+    // Open modal with announcement data
+    function openModal(announcement) {
+        const modal = document.querySelector('.announcement-modal');
+        const title = modal.querySelector('.announcement-modal-title');
+        const body = modal.querySelector('.announcement-modal-body');
+        const authorName = modal.querySelector('.modal-author-name');
+        const dateText = modal.querySelector('.modal-date-text');
+        
+        const createdDate = new Date(announcement.created_at);
+        const formattedDate = createdDate.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        title.textContent = announcement.title;
+        body.textContent = announcement.content;
+        authorName.textContent = announcement.created_by_username || 'Admin';
+        dateText.textContent = formattedDate;
+        
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Close modal
+    function closeModal() {
+        const modal = document.querySelector('.announcement-modal');
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+    
     // Initialize by fetching announcements
     fetchAnnouncements();
 });

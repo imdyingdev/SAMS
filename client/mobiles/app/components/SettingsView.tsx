@@ -100,10 +100,6 @@ export default function SettingsView() {
       <View style={styles.divider} />
 
       <View style={styles.menuList}>
-        <TouchableOpacity style={[styles.menuItem, styles.addStudentButton]}>
-          <Image source={require('../../assets/icons/settings/plus.png')} style={[styles.iconImage, styles.plusIcon]} />
-          <Text style={styles.menuText}>Add Student</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={[styles.menuItem, styles.logoutButton]} onPress={handleLogout}>
           <Text style={[styles.menuText, styles.logoutTextBold]}>Log Out</Text>
         </TouchableOpacity>
@@ -215,12 +211,6 @@ const styles = {
   flippedIcon: {
     transform: [{ scaleX: -1 }],
   },
-  addStudentButton: {
-    backgroundColor: '#59AC77',
-    borderRadius: BorderRadius.md,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
   logoutButton: {
     backgroundColor: '#F75270',
     borderRadius: BorderRadius.md,
@@ -229,10 +219,5 @@ const styles = {
   },
   logoutTextBold: {
     fontWeight: 'bold' as const,
-  },
-  plusIcon: {
-    width: 20,
-    height: 20,
-     marginRight: Spacing.md,
   },
 };
