@@ -1,4 +1,4 @@
-const { getPool, initializeDatabase } = require('../lib/db');
+const { Pool } = require('pg');
 
 module.exports = async (req, res) => {
   // Enable CORS
@@ -12,12 +12,19 @@ module.exports = async (req, res) => {
     });
   }
 
+  let pool;
+
   try {
-    const pool = getPool();
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      max: 1,
+      connectionTimeoutMillis: 10000
+    });
     
-    console.log('Attempting to initialize database...');
-    const initResult = await initializeDatabase();
-    
+    console.log('Connected to database...');
     console.log('Getting announcement count...');
     const result = await pool.query('SELECT COUNT(*) as count FROM announcements');
     const count = parseInt(result.rows[0].count);
@@ -27,7 +34,6 @@ module.exports = async (req, res) => {
       database: 'connected',
       count: count,
       message: `Found ${count} announcement(s)`,
-      initialization: initResult,
       environment: {
         NODE_ENV: process.env.NODE_ENV || 'not set',
         DATABASE_URL: 'configured'
@@ -41,5 +47,9 @@ module.exports = async (req, res) => {
       message: error.message,
       details: error.stack
     });
+  } finally {
+    if (pool) {
+      await pool.end();
+    }
   }
 };

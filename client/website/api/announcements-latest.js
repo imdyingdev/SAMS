@@ -1,4 +1,4 @@
-const { getPool, initializeDatabase } = require('../lib/db');
+const { Pool } = require('pg');
 
 module.exports = async (req, res) => {
   // Enable CORS
@@ -9,12 +9,19 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  let pool;
+
   try {
-    const pool = getPool();
-    
-    // Initialize database if needed (runs on cold starts)
-    await initializeDatabase();
-    
+    // Create pool
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false
+      },
+      max: 1,
+      connectionTimeoutMillis: 10000
+    });
+
     console.log('Fetching latest announcements...');
     
     const result = await pool.query(
@@ -29,5 +36,9 @@ module.exports = async (req, res) => {
       error: 'Failed to fetch announcements',
       message: err.message
     });
+  } finally {
+    if (pool) {
+      await pool.end();
+    }
   }
 };
