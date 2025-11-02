@@ -15,11 +15,8 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
-<<<<<<< HEAD
   },
   "engines": {
     "node": ">=16.0.0"
-=======
->>>>>>> origin/main
   }
 }
