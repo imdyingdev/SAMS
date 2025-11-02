@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Menu, ipcMain, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
-import { testConnection } from './database/db-connection.js';
+import { testConnection, query } from './database/db-connection.js';
 import { authenticateUser, createDefaultAdmin, updateUserRole } from './database/auth-service.js';
 import { initializeTables } from './database/db-init.js';
 import { createStudent, saveStudent, getAllStudents, getStudentsPaginated, deleteStudent, updateStudent, getStudentById, getUniqueGradeLevels, getUniqueSections, getStudentsForSF2 } from './database/student-service.js';
@@ -516,6 +516,55 @@ ipcMain.handle('auth:login', async (event, credentials) => {
   }
 });
 
+// Get user role handler
+ipcMain.handle('auth:get-user-role', async (event, userId) => {
+  try {
+    console.log('IPC: Getting user role for user ID:', userId);
+
+    // Query to get user role
+    const userQuery = `
+      SELECT role FROM admin_users
+      WHERE id = $1 AND is_active = true
+    `;
+
+    const result = await query(userQuery, [userId]);
+
+    if (result.rows.length === 0) {
+      return {
+        success: false,
+        message: 'User not found'
+      };
+    }
+
+    return {
+      success: true,
+      role: result.rows[0].role
+    };
+
+  } catch (error) {
+    console.error('IPC: Failed to get user role:', error);
+    return {
+      success: false,
+      message: 'Failed to get user role'
+    };
+  }
+});
+
+// Update user role handler
+ipcMain.handle('auth:update-user-role', async (event, userId, newRole) => {
+  try {
+    console.log(`IPC: Updating user role for user ID ${userId} to ${newRole}`);
+    const result = await updateUserRole(userId, newRole);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to update user role:', error);
+    return {
+      success: false,
+      message: 'Failed to update user role'
+    };
+  }
+});
+
 // Get student statistics by grade handler
 ipcMain.handle('get-student-stats-by-grade', async (event) => {
   try {
@@ -686,6 +735,107 @@ ipcMain.handle('get-today-attendance-stats', async (event) => {
   } catch (error) {
     console.error('IPC: Failed to get today\'s attendance statistics:', error);
     throw error;
+  }
+});
+
+// === EXPORT IPC HANDLERS ===
+
+// Get unique grade levels handler
+ipcMain.handle('get-unique-grade-levels', async (event) => {
+  try {
+    console.log('IPC: Fetching unique grade levels');
+    const gradeLevels = await getUniqueGradeLevels();
+    return { success: true, gradeLevels: gradeLevels };
+  } catch (error) {
+    console.error('IPC: Failed to get unique grade levels:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Get unique sections handler
+ipcMain.handle('get-unique-sections', async (event, gradeLevel) => {
+  try {
+    console.log(`IPC: Fetching unique sections for grade level: ${gradeLevel}`);
+    const sections = await getUniqueSections(gradeLevel);
+    return { success: true, sections: sections };
+  } catch (error) {
+    console.error('IPC: Failed to get unique sections:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Export SF2 attendance handler
+ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section) => {
+  try {
+    console.log(`IPC: Exporting SF2 attendance for grade ${gradeLevel}, section ${section}`);
+
+    // Get students for the specified grade and section
+    const students = await getStudentsForSF2(gradeLevel, section);
+
+    if (students.length === 0) {
+      return { success: false, message: 'No students found for the selected grade and section.' };
+    }
+
+    // Create Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('SF2 Attendance');
+
+    // Set column headers
+    worksheet.columns = [
+      { header: 'LRN', key: 'lrn', width: 15 },
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Grade Level', key: 'grade_level', width: 15 },
+      { header: 'Section', key: 'section', width: 15 },
+      { header: 'Gender', key: 'gender', width: 10 },
+      { header: 'RFID', key: 'rfid', width: 20 }
+    ];
+
+    // Style header row
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE6E6FA' }
+    };
+
+    // Add student data
+    students.forEach(student => {
+      const fullName = `${student.first_name || ''} ${student.middle_name ? student.middle_name + ' ' : ''}${student.last_name || ''} ${student.suffix || ''}`.trim();
+
+      worksheet.addRow({
+        lrn: student.lrn || '',
+        name: fullName,
+        grade_level: student.grade_level || '',
+        section: student.section || '',
+        gender: student.gender || '',
+        rfid: student.rfid || 'Not Assigned'
+      });
+    });
+
+    // Show save dialog
+    const { dialog } = await import('electron');
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save SF2 Attendance Export',
+      defaultPath: `SF2_${gradeLevel}_${section}_${new Date().toISOString().split('T')[0]}.xlsx`,
+      filters: [
+        { name: 'Excel Files', extensions: ['xlsx'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+    });
+
+    if (result.canceled) {
+      return { success: false, message: 'Export cancelled by user' };
+    }
+
+    // Write file
+    await workbook.xlsx.writeFile(result.filePath);
+
+    console.log('SF2 export completed successfully:', result.filePath);
+    return { success: true, filePath: result.filePath };
+
+  } catch (error) {
+    console.error('IPC: Failed to export SF2 attendance:', error);
+    return { success: false, message: error.message };
   }
 });
 
