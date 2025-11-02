@@ -1,9 +1,25 @@
-const verificationCodes = new Map();
+const VerificationStore = require('../verificationStore');
+
+const verificationStore = new VerificationStore();
 
 export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({
+      success: false,
+      message: 'Method not allowed'
+    });
   }
 
   try {
@@ -17,42 +33,19 @@ export default async function handler(req, res) {
     }
 
     // Verify code
-    const stored = verificationCodes.get(email.toLowerCase());
+    const isValid = verificationStore.verify(email, code);
 
-    if (!stored) {
-      return res.status(400).json({
-        success: false,
-        message: 'Verification code not found or expired'
-      });
-    }
-
-    // Check if code is expired (10 minutes)
-    const now = Date.now();
-    const expirationTime = 10 * 60 * 1000; // 10 minutes
-
-    if (now - stored.timestamp > expirationTime) {
-      verificationCodes.delete(email.toLowerCase());
-      return res.status(400).json({
-        success: false,
-        message: 'Verification code has expired. Please request a new one.'
-      });
-    }
-
-    // Verify code
-    if (stored.code === code.trim()) {
-      // Remove code after successful verification
-      verificationCodes.delete(email.toLowerCase());
-      return res.json({
+    if (isValid) {
+      res.json({
         success: true,
         message: 'Email verified successfully'
       });
     } else {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
-        message: 'Invalid verification code. Please try again.'
+        message: 'Invalid or expired verification code'
       });
     }
-
   } catch (error) {
     console.error('Error in verify-code:', error);
     res.status(500).json({

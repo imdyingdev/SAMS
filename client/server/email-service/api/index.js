@@ -1,160 +1,32 @@
-const express = require('express');
-const cors = require('cors');
-const EmailService = require('../emailService');
-const VerificationStore = require('../verificationStore');
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-require('dotenv').config();
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-const app = express();
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// Initialize services
-const emailService = new EmailService();
-const verificationStore = new VerificationStore();
-
-// Routes
-
-/**
- * POST /api/email/send-verification
- * Send verification code to email
- */
-app.post('/api/email/send-verification', async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email address is required'
-      });
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid email format'
-      });
-    }
-
-    // Generate verification code
-    const verificationCode = emailService.generateVerificationCode();
-
-    // Store code with expiration (10 minutes)
-    verificationStore.set(email, verificationCode, 10);
-
-    // Send email
-    const result = await emailService.sendVerificationEmail(email, verificationCode);
-
-    if (result.success) {
-      res.json({
-        success: true,
-        message: 'Verification code sent successfully'
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        message: result.message
-      });
-    }
-  } catch (error) {
-    console.error('Error in send-verification:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
+  // Only allow GET requests for the root endpoint
+  if (req.method !== 'GET') {
+    return res.status(405).json({
+      error: 'Method not allowed',
+      message: 'This endpoint only accepts GET requests'
     });
   }
-});
 
-/**
- * POST /api/email/verify-code
- * Verify the email verification code
- */
-app.post('/api/email/verify-code', (req, res) => {
-  try {
-    const { email, code } = req.body;
-
-    if (!email || !code) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and verification code are required'
-      });
-    }
-
-    // Verify code
-    const isValid = verificationStore.verify(email, code);
-
-    if (isValid) {
-      res.json({
-        success: true,
-        message: 'Email verified successfully'
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid or expired verification code'
-      });
-    }
-  } catch (error) {
-    console.error('Error in verify-code:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-});
-
-/**
- * GET /api/email/status
- * Check verification status for an email
- */
-app.get('/api/email/status', (req, res) => {
-  try {
-    const { email } = req.query;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email address is required'
-      });
-    }
-
-    const remainingTime = verificationStore.getRemainingTime(email);
-
-    res.json({
-      success: true,
-      hasPendingVerification: remainingTime !== null,
-      remainingMinutes: remainingTime
-    });
-  } catch (error) {
-    console.error('Error in status check:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error'
-    });
-  }
-});
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    service: 'Email Service',
+  // Return service status
+  res.status(200).json({
+    service: 'SAMS Email Service',
+    status: 'Running',
+    version: '1.0.0',
+    endpoints: {
+      'POST /api/email/send-verification': 'Send verification code to email',
+      'POST /api/email/verify-code': 'Verify email verification code',
+      'GET /api/email/status': 'Check verification status'
+    },
     timestamp: new Date().toISOString()
   });
-});
-
-// Error handling middleware
-app.use((error, req, res, next) => {
-  console.error('Unhandled error:', error);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error'
-  });
-});
-
-module.exports = app;
+}

@@ -14,10 +14,8 @@ interface VerifyCodeResult {
   message: string;
 }
 
-// Server endpoint
-// Use your machine's local IP address instead of localhost for mobile devices
-// Update this IP address to match your development machine's IP
-const EMAIL_SERVICE_URL = 'http://192.168.1.6:3001/api/email';
+// Server endpoint - Now using Vercel deployment
+const EMAIL_SERVICE_URL = 'https://sams-email-apiv2.vercel.app/api';
 
 /**
  * Send verification email using the server-side email service

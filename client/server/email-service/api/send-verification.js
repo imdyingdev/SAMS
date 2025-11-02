@@ -1,34 +1,73 @@
-const express = require('express');
-const cors = require('cors');
+const EmailService = require('../emailService');
+const VerificationStore = require('../verificationStore');
 
-const app = express();
+const emailService = new EmailService();
+const verificationStore = new VerificationStore();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-// Health check
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    service: 'Email Service',
-    timestamp: new Date().toISOString()
-  });
-});
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
 
-// Return service status
-app.get('/', (req, res) => {
-  res.status(200).json({
-    service: 'SAMS Email Service',
-    status: 'Running',
-    version: '1.0.0',
-    endpoints: {
-      'POST /api/email/send-verification': 'Send verification code to email',
-      'POST /api/email/verify-code': 'Verify email verification code',
-      'GET /api/email/status': 'Check verification status'
-    },
-    timestamp: new Date().toISOString()
-  });
-});
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({
+      success: false,
+      message: 'Method not allowed'
+    });
+  }
 
-module.exports = app;
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email address is required'
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid email format'
+      });
+    }
+
+    // Generate verification code
+    const verificationCode = emailService.generateVerificationCode();
+
+    // Store code with expiration (10 minutes)
+    verificationStore.set(email, verificationCode, 10);
+
+    // Send email
+    const result = await emailService.sendVerificationEmail(email, verificationCode);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Verification code sent successfully'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error in send-verification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+}
