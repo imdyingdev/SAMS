@@ -1,14 +1,4 @@
-const { Pool } = require('pg');
-
-// Database setup
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  max: 1,
-  connectionTimeoutMillis: 5000
-});
+const { getPool, initializeDatabase } = require('../../lib/db');
 
 module.exports = async (req, res) => {
   // Enable CORS
@@ -20,6 +10,11 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const pool = getPool();
+    
+    // Initialize database if needed
+    await initializeDatabase();
+    
     const result = await pool.query(
       'SELECT * FROM announcements ORDER BY created_at DESC'
     );

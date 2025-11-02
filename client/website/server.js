@@ -1,6 +1,9 @@
+// This file is kept for local development only
+// Production uses Vercel's /api directory structure
+
 const express = require('express');
 const path = require('path');
-const { Pool } = require('pg');
+const { getPool, initializeDatabase } = require('./lib/db');
 const dotenv = require('dotenv');
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,74 +11,15 @@ const PORT = process.env.PORT || 3000;
 // Load environment variables
 dotenv.config();
 
-// Database setup
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  // Serverless optimization
-  max: 1,
-  connectionTimeoutMillis: 5000
+// Get shared database pool
+const pool = getPool();
+
+// Initialize database on startup (for local development)
+initializeDatabase().then(() => {
+  console.log('Database initialized');
+}).catch(err => {
+  console.error('Failed to initialize database:', err);
 });
-
-// Initialize database (only in development or on first deployment)
-// In serverless, this runs on cold starts
-async function initializeDatabase() {
-  try {
-    const client = await pool.connect();
-    console.log('Connected to PostgreSQL database');
-    
-    // Create announcements table if it doesn't exist
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS announcements (
-        id SERIAL PRIMARY KEY,
-        title TEXT NOT NULL,
-        content TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        created_by_username TEXT DEFAULT 'Admin'
-      )
-    `);
-    console.log('Announcements table created or already exists');
-    
-    // Check if we need to insert sample data
-    const result = await client.query('SELECT COUNT(*) as count FROM announcements');
-    
-    if (result.rows[0].count === '0') {
-      // Insert sample data if table is empty
-      const sampleAnnouncements = [
-        {
-          title: 'Welcome to AMPID ES',
-          content: 'Welcome to AMPID Elementary School\'s online portal. Stay updated with the latest school announcements and news.'
-        },
-        {
-          title: 'School Events',
-          content: 'Check back regularly for updates on upcoming school events, activities, and important dates.'
-        },
-        {
-          title: 'Stay Connected',
-          content: 'We\'re committed to keeping parents and students informed. This announcement system will help us stay connected.'
-        }
-      ];
-      
-      for (const announcement of sampleAnnouncements) {
-        await client.query(
-          'INSERT INTO announcements (title, content) VALUES ($1, $2)',
-          [announcement.title, announcement.content]
-        );
-      }
-      console.log('Sample announcements inserted');
-    }
-    
-    client.release();
-  } catch (err) {
-    console.error('Error initializing database:', err);
-  }
-}
-
-// Run initialization (safe for serverless - uses connection pooling)
-initializeDatabase();
 
 // Middleware
 app.use(express.json());
