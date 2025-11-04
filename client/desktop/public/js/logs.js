@@ -61,21 +61,39 @@ export async function loadLogs(page = 1, resetFilters = false) {
 
     // Show loading state
     showLogsStatus('loading', 'Loading logs...', 'Please wait while we fetch the activity logs.');
-    
+
     // Hide logs list initially
     if (logsListContainer) {
         logsListContainer.style.display = 'none';
     }
 
     try {
+        console.log('DEBUG: Calling window.electronAPI.getLogsPaginated with params:', {
+            page: currentLogsPage,
+            pageSize: currentLogsPageSize,
+            searchTerm: currentLogsSearchTerm,
+            logTypeFilter: currentLogTypeFilter,
+            dateFilter: currentDateFilter
+        });
+
         const result = await window.electronAPI.getLogsPaginated(
-            currentLogsPage, 
-            currentLogsPageSize, 
-            currentLogsSearchTerm, 
-            currentLogTypeFilter, 
+            currentLogsPage,
+            currentLogsPageSize,
+            currentLogsSearchTerm,
+            currentLogTypeFilter,
             currentDateFilter
         );
-        console.log('Received paginated logs data:', result);
+
+        console.log('DEBUG: Raw result from getLogsPaginated:', result);
+        console.log('DEBUG: Result type:', typeof result);
+        console.log('DEBUG: Result keys:', result ? Object.keys(result) : 'null/undefined');
+
+        if (result && result.logs) {
+            console.log('DEBUG: Logs array length:', result.logs.length);
+            console.log('DEBUG: First log sample:', result.logs[0] || 'No logs');
+            console.log('DEBUG: Pagination info:', result.pagination);
+            console.log('DEBUG: Summary info:', result.summary);
+        }
 
         if (!result || !result.logs || !Array.isArray(result.logs)) {
             throw new Error('Invalid logs data received from main process.');
@@ -231,11 +249,22 @@ function getStudentInitials(fullName) {
 }
 
 function renderLogEntry(log) {
+    console.log('DEBUG: Rendering log entry:', log);
+
     const logType = log.log_type || 'unknown';
     const studentName = log.student_name || '(N/A)';
     const gradeLevel = log.grade_level || '';
     const rfid = log.rfid || 'N/A';
     const timestamp = new Date(log.timestamp);
+
+    console.log('DEBUG: Log entry fields:', {
+        logType,
+        studentName,
+        gradeLevel,
+        rfid,
+        timestamp: timestamp.toISOString(),
+        hasTimestamp: !!log.timestamp
+    });
 
     const iconClass = getLogTypeClass(logType);
     const actionText = logType === 'time_in' ? 'Time In' : 'Time Out';
@@ -246,6 +275,9 @@ function renderLogEntry(log) {
     // Format student display name
     const displayName = studentName === '(N/A)' ? '(N/A)' :
         gradeLevel ? `${studentName} (${gradeLevel})` : studentName;
+
+    console.log('DEBUG: Display name:', displayName);
+    console.log('DEBUG: Student initials:', studentInitials);
 
     // Format timestamp
     const formattedTimestamp = timestamp.toLocaleString('en-US', {

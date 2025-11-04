@@ -38,8 +38,12 @@ export async function createLogEntry(logType, description, rfid = null, studentI
  */
 export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '', logTypeFilter = '', dateFilter = '') {
     try {
+        console.log('DEBUG: getLogsPaginated called with params:', {
+            page, pageSize, searchTerm, logTypeFilter, dateFilter
+        });
+
         const offset = (page - 1) * pageSize;
-        
+
         // Build WHERE clause based on filters
         let whereConditions = [];
         let queryParams = [];
@@ -91,9 +95,9 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
         
         // Main query to get logs with student information from rfid_logs table
         const logsQuery = `
-            SELECT 
+            SELECT
                 rl.id,
-                rl.rfid,
+                COALESCE(s.rfid::text, rl.rfid::text) as rfid,
                 rl.tap_count,
                 rl.tap_type as log_type,
                 rl.timestamp,
@@ -103,7 +107,7 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
                 s.grade_level,
                 s.lrn,
                 CONCAT(s.first_name, ' ', s.last_name) as student_name,
-                CASE 
+                CASE
                     WHEN rl.tap_type = 'time_in' THEN 'Student Time In'
                     WHEN rl.tap_type = 'time_out' THEN 'Student Time Out'
                     ELSE 'RFID Activity'
@@ -128,14 +132,26 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
         const countParams = queryParams.slice(0, -2); // Remove LIMIT and OFFSET params
         
         // Execute both queries
+        console.log('DEBUG: Executing logs query:', logsQuery);
+        console.log('DEBUG: Query params:', queryParams);
+        console.log('DEBUG: Count query:', countQuery);
+        console.log('DEBUG: Count params:', countParams);
+
         const [logsResult, countResult] = await Promise.all([
             pool.query(logsQuery, queryParams),
             pool.query(countQuery, countParams)
         ]);
-        
+
+        console.log('DEBUG: Logs query result row count:', logsResult.rows.length);
+        console.log('DEBUG: Count query result:', countResult.rows[0]);
+
         const logs = logsResult.rows;
         const totalLogs = parseInt(countResult.rows[0].total);
         const totalPages = Math.ceil(totalLogs / pageSize);
+
+        console.log('DEBUG: Processed logs count:', logs.length);
+        console.log('DEBUG: Total logs in DB:', totalLogs);
+        console.log('DEBUG: Total pages:', totalPages);
         
         // Get summary data for today from rfid_logs
         const summaryQuery = `
@@ -161,7 +177,10 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
             hasPrevPage: page > 1,
             hasNextPage: page < totalPages
         };
-        
+
+        console.log('DEBUG: Returning result object with keys:', Object.keys({ logs, pagination, summary }));
+        console.log('DEBUG: Sample log data structure:', logs.length > 0 ? Object.keys(logs[0]) : 'No logs');
+
         return {
             logs: logs,
             pagination: pagination,
@@ -182,9 +201,9 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
 export async function getRecentLogs(limit = 10) {
     try {
         const query = `
-            SELECT 
+            SELECT
                 rl.id,
-                rl.rfid,
+                COALESCE(s.rfid::text, rl.rfid::text) as rfid,
                 rl.tap_count,
                 rl.tap_type as log_type,
                 rl.timestamp,
@@ -194,7 +213,7 @@ export async function getRecentLogs(limit = 10) {
                 s.grade_level,
                 s.lrn,
                 CONCAT(s.first_name, ' ', s.last_name) as student_name,
-                CASE 
+                CASE
                     WHEN rl.tap_type = 'time_in' THEN 'Student Time In'
                     WHEN rl.tap_type = 'time_out' THEN 'Student Time Out'
                     ELSE 'RFID Activity'

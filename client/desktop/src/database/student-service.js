@@ -153,7 +153,7 @@ async function getStudentsPaginated(page = 1, pageSize = 50, searchTerm = '', gr
         first_name ASC
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
-    
+
     params.push(pageSize, offset);
     const dataResult = await query(dataQuery, params);
     
