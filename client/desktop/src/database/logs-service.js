@@ -307,6 +307,32 @@ export async function logAuthActivity(action, username, details = null) {
 }
 
 /**
+ * Delete a specific log entry
+ * @param {number} logId - ID of the log entry to delete
+ * @returns {Promise<Object>} Result object
+ */
+export async function deleteLogEntry(logId) {
+    try {
+        const query = `
+            DELETE FROM rfid_logs 
+            WHERE id = $1
+            RETURNING *
+        `;
+        
+        const result = await pool.query(query, [logId]);
+        
+        if (result.rowCount === 0) {
+            return { success: false, message: 'Log entry not found' };
+        }
+        
+        return { success: true, deletedLog: result.rows[0] };
+    } catch (error) {
+        console.error('[LOGS] Error deleting log entry:', error.message);
+        throw new Error(`Failed to delete log entry: ${error.message}`);
+    }
+}
+
+/**
  * Delete old logs (cleanup function)
  * @param {number} daysToKeep - Number of days to keep logs
  * @returns {Promise<Object>} Result object

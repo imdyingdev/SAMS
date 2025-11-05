@@ -32,10 +32,24 @@ contextBridge.exposeInMainWorld('rfidAPI', {
     getTodayCount: () => ipcRenderer.invoke('get-today-count'),
     
     /**
+     * Manual refresh (fallback if real-time fails)
+     * @returns {Promise<Object>} Success status
+     */
+    manualRefresh: () => ipcRenderer.invoke('manual-refresh'),
+    
+    /**
      * Listen for window focus changes
      * @param {Function} callback - Called with true when focused, false when blurred
      */
     onFocusChanged: (callback) => {
         ipcRenderer.on('window-focus-changed', (event, isFocused) => callback(isFocused));
+    },
+    
+    /**
+     * Listen for real-time log changes
+     * @param {Function} callback - Called when logs are added, updated, or deleted
+     */
+    onLogChange: (callback) => {
+        ipcRenderer.on('log-change', (event, changeData) => callback(changeData));
     }
 });

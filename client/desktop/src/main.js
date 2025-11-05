@@ -6,7 +6,7 @@ import { authenticateUser, createDefaultAdmin, updateUserRole } from './database
 import { initializeTables } from './database/db-init.js';
 import { createStudent, saveStudent, getAllStudents, getStudentsPaginated, deleteStudent, updateStudent, getStudentById, getUniqueGradeLevels, getUniqueSections, getStudentsForSF2 } from './database/student-service.js';
 import { getStudentStatsByGrade, getStudentStatsByGender } from './database/stats-service.js';
-import { getLogsPaginated, getRecentLogs, createLogEntry, logRfidActivity, logStudentActivity, logAuthActivity } from './database/logs-service.js';
+import { getLogsPaginated, getRecentLogs, createLogEntry, deleteLogEntry, logRfidActivity, logStudentActivity, logAuthActivity } from './database/logs-service.js';
 import { createAnnouncement, getAllAnnouncements, getAnnouncementsCount, getAnnouncementById, updateAnnouncement, deleteAnnouncement, searchAnnouncements } from './database/announcement-service.js';
 import { getTodayAttendanceStats } from './database/attendance-stats-service.js';
 import { SerialPort } from 'serialport';
@@ -630,6 +630,18 @@ ipcMain.handle('create-log-entry', async (event, logType, description, rfid = nu
     return result;
   } catch (error) {
     console.error('IPC: Failed to create log entry:', error);
+    throw error;
+  }
+});
+
+// Delete log entry handler
+ipcMain.handle('delete-log-entry', async (event, logId) => {
+  try {
+    console.log(`IPC: Deleting log entry with ID: ${logId}`);
+    const result = await deleteLogEntry(logId);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to delete log entry:', error);
     throw error;
   }
 });

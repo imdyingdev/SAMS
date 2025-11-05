@@ -38,6 +38,28 @@ body {
     background: #1a1a1a;
 }
 
+.rfid-display.success {
+    background: #22c55e; /* Good green color for white text */
+}
+
+.rfid-display.success .display-text {
+    color: white;
+}
+
+.rfid-display.success .dots {
+    color: white;
+}
+
+.rfid-display.success .bottom-btn {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.rfid-display.success .bottom-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.08);
+}
+
 .moon-waiting {
     position: absolute;
     top: -220px;

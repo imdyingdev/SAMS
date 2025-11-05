@@ -45,6 +45,12 @@ function setupSettingsHandlers() {
         userRoleSelect.addEventListener('change', updateUserRole);
     }
 
+    // LRN prefix save button handler
+    const saveLrnPrefixButton = document.getElementById('btn-save-lrn-prefix');
+    if (saveLrnPrefixButton) {
+        saveLrnPrefixButton.addEventListener('click', saveLrnPrefix);
+    }
+
     // Role help icon tooltip handler
     const roleHelpIcon = document.getElementById('role-help-icon');
     const roleTooltip = document.getElementById('role-tooltip');
@@ -90,6 +96,52 @@ function setupSettingsHandlers() {
     } else {
         console.error('Role tooltip elements not found:', { roleHelpIcon, roleTooltip });
     }
+
+    // LRN help icon tooltip handler
+    const lrnHelpIcon = document.getElementById('lrn-help-icon');
+    const lrnTooltip = document.getElementById('lrn-tooltip');
+
+    console.log('Setting up LRN tooltip...', { lrnHelpIcon, lrnTooltip });
+
+    if (lrnHelpIcon && lrnTooltip) {
+        console.log('Both LRN elements found, adding click listener');
+
+        // Simple display-based toggle
+        lrnHelpIcon.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            console.log('LRN help icon clicked, toggling tooltip');
+
+            // Simple display toggle
+            const isVisible = lrnTooltip.style.display !== 'none';
+
+            if (isVisible) {
+                lrnTooltip.style.display = 'none';
+                console.log('Hiding LRN tooltip');
+            } else {
+                lrnTooltip.style.display = 'block';
+                console.log('Showing LRN tooltip');
+            }
+
+            // Hide tooltip when clicking elsewhere
+            const hideLrnTooltip = function(event) {
+                if (!lrnHelpIcon.contains(event.target) && !lrnTooltip.contains(event.target)) {
+                    lrnTooltip.style.display = 'none';
+                    document.removeEventListener('click', hideLrnTooltip);
+                    console.log('Hiding LRN tooltip from outside click');
+                }
+            };
+
+            if (!isVisible) {
+                setTimeout(() => {
+                    document.addEventListener('click', hideLrnTooltip);
+                }, 10);
+            }
+        });
+    } else {
+        console.error('LRN tooltip elements not found:', { lrnHelpIcon, lrnTooltip });
+    }
 }
 
 async function loadCurrentSettings() {
@@ -115,6 +167,13 @@ async function loadCurrentSettings() {
             }
         } else {
             console.error('Failed to load user role:', response.message);
+        }
+
+        // Load LRN prefix from localStorage
+        const lrnPrefix = localStorage.getItem('lrnPrefix') || '109481';
+        const lrnPrefixInput = document.getElementById('lrn-prefix');
+        if (lrnPrefixInput) {
+            lrnPrefixInput.value = lrnPrefix;
         }
     } catch (error) {
         console.error('Error loading current settings:', error);
@@ -259,6 +318,25 @@ function showRoleChangeConfirmationModal(newRole, onConfirm) {
     });
 }
 
+async function saveLrnPrefix() {
+    try {
+        const lrnPrefixInput = document.getElementById('lrn-prefix');
+        const newPrefix = lrnPrefixInput.value.trim();
+
+        if (!newPrefix) {
+            showNotification('Please enter an LRN prefix.', 'error');
+            return;
+        }
+
+        // Save to localStorage
+        localStorage.setItem('lrnPrefix', newPrefix);
+        
+        showNotification('LRN prefix saved successfully!', 'success');
+    } catch (error) {
+        console.error('Error saving LRN prefix:', error);
+        showNotification('An error occurred while saving the LRN prefix.', 'error');
+    }
+}
 
 function showNotification(message, type = 'info') {
     // Create notification element

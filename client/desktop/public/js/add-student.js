@@ -14,6 +14,9 @@ export function initializeAddStudentPage() {
         console.warn('⚠️ Electron API not available');
     }
 
+    // Load LRN prefix from settings
+    loadLrnPrefix();
+
     // Set up button event listeners
     setupAddStudentButtons();
 
@@ -22,6 +25,141 @@ export function initializeAddStudentPage() {
 
     // Set up RFID help tooltip
     setupRfidTooltip();
+}
+
+function loadLrnPrefix() {
+    const lrnPrefix = localStorage.getItem('lrnPrefix') || '109481';
+    const lrnInput = document.getElementById('student-lrn');
+    if (lrnInput) {
+        lrnInput.value = lrnPrefix;
+    }
+
+    // Load retained form values from localStorage
+    loadRetainedFormValues();
+}
+
+function loadRetainedFormValues() {
+    // Load retained values for gender, grade level, and section
+    const retainedGender = localStorage.getItem('addStudentGender');
+    const retainedGradeLevel = localStorage.getItem('addStudentGradeLevel');
+    const retainedSection = localStorage.getItem('addStudentSection');
+
+    if (retainedGender) {
+        const genderSelect = document.getElementById('student-gender');
+        if (genderSelect) {
+            genderSelect.value = retainedGender;
+            // Add event listener to update retained value when changed
+            genderSelect.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    localStorage.setItem('addStudentGender', e.target.value);
+                } else {
+                    localStorage.removeItem('addStudentGender');
+                }
+            });
+        }
+    }
+
+    if (retainedGradeLevel) {
+        const gradeSelect = document.getElementById('student-grade-level');
+        if (gradeSelect) {
+            gradeSelect.value = retainedGradeLevel;
+            // Add event listener to update retained value when changed
+            gradeSelect.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    localStorage.setItem('addStudentGradeLevel', e.target.value);
+                } else {
+                    localStorage.removeItem('addStudentGradeLevel');
+                }
+            });
+        }
+    }
+
+    if (retainedSection) {
+        const sectionInput = document.getElementById('student-section');
+        if (sectionInput) {
+            sectionInput.value = retainedSection;
+            // Add event listener to update retained value when changed
+            sectionInput.addEventListener('input', (e) => {
+                const value = e.target.value.trim();
+                if (value) {
+                    localStorage.setItem('addStudentSection', value);
+                } else {
+                    localStorage.removeItem('addStudentSection');
+                }
+            });
+        }
+    }
+
+    // Also add listeners for fields that might not have retained values initially
+    setupFieldListeners();
+}
+
+function setupFieldListeners() {
+    // Setup listeners for gender field if not already done
+    const genderSelect = document.getElementById('student-gender');
+    if (genderSelect && !genderSelect.hasAttribute('data-listener-added')) {
+        genderSelect.setAttribute('data-listener-added', 'true');
+        genderSelect.addEventListener('change', (e) => {
+            if (e.target.value) {
+                localStorage.setItem('addStudentGender', e.target.value);
+            } else {
+                localStorage.removeItem('addStudentGender');
+            }
+        });
+    }
+
+    // Setup listeners for grade level field if not already done
+    const gradeSelect = document.getElementById('student-grade-level');
+    if (gradeSelect && !gradeSelect.hasAttribute('data-listener-added')) {
+        gradeSelect.setAttribute('data-listener-added', 'true');
+        gradeSelect.addEventListener('change', (e) => {
+            if (e.target.value) {
+                localStorage.setItem('addStudentGradeLevel', e.target.value);
+            } else {
+                localStorage.removeItem('addStudentGradeLevel');
+            }
+        });
+    }
+
+    // Setup listeners for section field if not already done
+    const sectionInput = document.getElementById('student-section');
+    if (sectionInput && !sectionInput.hasAttribute('data-listener-added')) {
+        sectionInput.setAttribute('data-listener-added', 'true');
+        sectionInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            if (value) {
+                localStorage.setItem('addStudentSection', value);
+            } else {
+                localStorage.removeItem('addStudentSection');
+            }
+        });
+    }
+}
+
+function retainFormValues() {
+    // Save current form values to localStorage
+    const genderSelect = document.getElementById('student-gender');
+    const gradeSelect = document.getElementById('student-grade-level');
+    const sectionInput = document.getElementById('student-section');
+
+    if (genderSelect && genderSelect.value) {
+        localStorage.setItem('addStudentGender', genderSelect.value);
+    }
+
+    if (gradeSelect && gradeSelect.value) {
+        localStorage.setItem('addStudentGradeLevel', gradeSelect.value);
+    }
+
+    if (sectionInput && sectionInput.value.trim()) {
+        localStorage.setItem('addStudentSection', sectionInput.value.trim());
+    }
+}
+
+function clearRetainedFormValues() {
+    // Clear retained values from localStorage
+    localStorage.removeItem('addStudentGender');
+    localStorage.removeItem('addStudentGradeLevel');
+    localStorage.removeItem('addStudentSection');
 }
 
 function setupAddStudentButtons() {
@@ -33,6 +171,9 @@ function setupAddStudentButtons() {
     // Cancel button
     if (cancelButton) {
         cancelButton.addEventListener('click', () => {
+            // Clear retained form values when user cancels
+            clearRetainedFormValues();
+            
             // Navigate back to students view
             if (window.navigateToView) {
                 window.navigateToView('students');
@@ -44,6 +185,9 @@ function setupAddStudentButtons() {
     if (createButton) {
         createButton.addEventListener('click', async () => {
             try {
+                // Retain form values before creating student
+                retainFormValues();
+
                 const studentData = {
                     lrn: document.getElementById('student-lrn').value.trim(),
                     grade_level: document.getElementById('student-grade-level').value,

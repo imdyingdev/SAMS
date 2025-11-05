@@ -9,7 +9,7 @@
         <div class="settings-item">
             <label for="user-role-full">User Role
                 <span class="role-help-wrapper">
-                    <i class="fa-solid fa-question role-help-icon" id="role-help-icon" title="Click for role information"></i>
+                    <span class="role-help-icon simple" id="role-help-icon" title="Click for role information"></span>
                     <div class="role-tooltip" id="role-tooltip" style="display: none;">
                         Super Administrator: Possesses unrestricted system access, bypassing confirmation dialogs for enhanced operational efficiency.<br><br>Administrator: Maintains comprehensive access with mandatory confirmation prompts for critical actions to safeguard data integrity and system stability.
                     </div>
@@ -19,6 +19,24 @@
                 <option value="administrator">Administrator</option>
                 <option value="super-administrator">Super Administrator</option>
             </select>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h2>System Configuration</h2>
+        <div class="settings-item">
+            <label for="lrn-prefix">Learner Reference Number (LRN)
+                <span class="lrn-help-wrapper">
+                    <span class="lrn-help-icon simple" id="lrn-help-icon" title="Click for LRN prefix information"></span>
+                    <div class="lrn-tooltip" id="lrn-tooltip" style="display: none;">
+                        This prefix will be automatically set as the default value when adding new students. You can modify or replace the entire LRN as needed for each student.
+                    </div>
+                </span>
+            </label>
+            <input type="text" id="lrn-prefix" name="lrn-prefix" placeholder="Enter LRN prefix (e.g., 109481)" maxlength="10">
+        </div>
+        <div class="settings-actions">
+            <button class="btn-save" id="btn-save-lrn-prefix">Save LRN Prefix</button>
         </div>
     </div>
 </div>

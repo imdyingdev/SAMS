@@ -86,6 +86,52 @@
     color: var(--text-white-primary);
 }
 
+.settings-item input {
+    padding: 0.75rem;
+    border-radius: var(--border-radius-small);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--glass-dark);
+    color: var(--text-white-primary);
+    font-size: 0.9rem;
+    transition: border-color var(--transition-fast);
+    width: auto;
+    min-width: 200px;
+    max-width: 300px;
+}
+
+.settings-item input:focus {
+    outline: none;
+    border-color: var(--primary-pink);
+    box-shadow: 0 0 0 2px rgba(255, 105, 180, 0.2);
+}
+
+.settings-item input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.settings-actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-save {
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius-small);
+    font-size: 0.9rem;
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: none;
+    background: var(--primary-pink);
+    color: var(--text-white-primary);
+}
+
+.btn-save:hover {
+    background: var(--primary-pink-hover);
+    transform: translateY(-1px);
+}
+
 /* Button Styles */
 .btn-primary, .btn-secondary {
     padding: 0.75rem 1.5rem;
@@ -137,6 +183,11 @@
     border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
+.notification-error {
+    background: rgba(239, 68, 68, 0.9);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
 .notification-info {
     background: rgba(59, 130, 246, 0.9);
     border: 1px solid rgba(59, 130, 246, 0.3);
@@ -163,17 +214,24 @@
     background-color: white;
     color: #EC4899;
     border-radius: 50%;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
+    font-size: 8px;
     margin-top: -2px;
     margin-left: 2px;
     vertical-align: middle;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     cursor: pointer;
+    text-align: center;
+    line-height: 1;
+}
+
+.role-help-icon:before {
+    margin: 0;
+    padding: 0;
 }
 
 .role-tooltip {
@@ -203,6 +261,93 @@
     pointer-events: auto;
 }
 
+/* LRN Help Icon Styles */
+.lrn-help-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.lrn-help-icon {
+    background-color: white;
+    color: #EC4899;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    margin-top: -2px;
+    margin-left: 2px;
+    vertical-align: middle;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    text-align: center;
+    line-height: 1;
+}
+
+.lrn-help-icon:before {
+    margin: 0;
+    padding: 0;
+}
+
+/* Alternative simple question mark icon (if FontAwesome doesn't work properly) */
+.lrn-help-icon.simple,
+.role-help-icon.simple {
+    background-color: white;
+    color: #EC4899;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+    margin-top: -2px;
+    margin-left: 2px;
+    vertical-align: middle;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    text-align: center;
+    line-height: 1;
+    font-family: Arial, sans-serif;
+}
+
+.lrn-help-icon.simple:before,
+.role-help-icon.simple:before {
+    content: "?";
+    margin: 0;
+    padding: 0;
+}
+
+.lrn-tooltip {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 0;
+    font-size: 12px;
+    white-space: normal;
+    width: 250px;
+    z-index: 1000;
+    transition: opacity 0.3s, visibility 0.3s;
+    left: 25px;
+    top: -150%;
+    transform: translateY(-50%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.lrn-tooltip.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .settings-view {
@@ -213,9 +358,21 @@
         padding: 1rem;
     }
 
-    .btn-primary, .btn-secondary {
+    .btn-primary, .btn-secondary, .btn-save {
         width: 100%;
         margin-right: 0;
         margin-bottom: 0.5rem;
+    }
+
+    .settings-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .settings-item input,
+    .settings-item select {
+        width: 100%;
+        min-width: unset;
+        max-width: unset;
     }
 }

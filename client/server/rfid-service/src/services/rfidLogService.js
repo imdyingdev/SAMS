@@ -2,6 +2,88 @@
 const { supabase } = require('../config/database');
 const { getStudentByRfid } = require('./studentService');
 
+// Store subscription for cleanup
+let realtimeSubscription = null;
+
+/**
+ * Initialize real-time subscription for log changes
+ * @param {Function} onLogChange - Callback function when logs change
+ */
+function initializeRealtimeSubscription(onLogChange) {
+    try {
+        // Clean up existing subscription
+        if (realtimeSubscription) {
+            console.log('🧹 Cleaning up existing subscription...');
+            supabase.removeChannel(realtimeSubscription);
+        }
+
+        console.log('🔄 Initializing real-time subscription for rfid_logs...');
+
+        // Subscribe to rfid_logs table changes
+        realtimeSubscription = supabase
+            .channel('rfid_logs_changes')
+            .on('postgres_changes', 
+                { 
+                    event: '*', 
+                    schema: 'public', 
+                    table: 'rfid_logs' 
+                }, 
+                (payload) => {
+                    console.log('📡 Real-time change detected:', {
+                        event: payload.eventType,
+                        table: payload.table,
+                        recordId: payload.new?.id || payload.old?.id,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    // Notify the renderer process about the change
+                    if (onLogChange) {
+                        onLogChange({
+                            eventType: payload.eventType, // INSERT, UPDATE, DELETE
+                            record: payload.new || payload.old,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
+                }
+            )
+            .subscribe((status, err) => {
+                if (err) {
+                    console.error('❌ Real-time subscription error:', err);
+                    return;
+                }
+                
+                console.log('📡 Real-time subscription status:', status);
+                
+                if (status === 'SUBSCRIBED') {
+                    console.log('✅ Successfully subscribed to rfid_logs changes');
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error('❌ Channel error in real-time subscription');
+                } else if (status === 'TIMED_OUT') {
+                    console.error('⏰ Real-time subscription timed out');
+                } else if (status === 'CLOSED') {
+                    console.log('🔒 Real-time subscription closed');
+                }
+            });
+
+        console.log('✅ Real-time subscription initialized');
+        return true;
+    } catch (error) {
+        console.error('❌ Error initializing real-time subscription:', error);
+        return false;
+    }
+}
+
+/**
+ * Cleanup real-time subscription
+ */
+function cleanupRealtimeSubscription() {
+    if (realtimeSubscription) {
+        supabase.removeChannel(realtimeSubscription);
+        realtimeSubscription = null;
+        console.log('✓ Real-time subscription cleaned up');
+    }
+}
+
 /**
  * Validate and log RFID scan
  * @param {string} rfid - The RFID/UID from the card
@@ -124,5 +206,7 @@ async function getTodayStudentCount() {
 module.exports = {
     validateAndLogRfid,
     getRecentLogs,
-    getTodayStudentCount
+    getTodayStudentCount,
+    initializeRealtimeSubscription,
+    cleanupRealtimeSubscription
 };

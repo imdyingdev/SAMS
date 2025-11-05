@@ -39,12 +39,27 @@ window.rfidAPI.onFocusChanged((isFocused) => {
     }
 });
 
+// Listen for real-time log changes (backup only - main system uses direct DB checks)
+window.rfidAPI.onLogChange((changeData) => {
+    console.log('📡 Real-time log change received (backup trigger):', changeData.eventType);
+    
+    // Just trigger a quick refresh - don't rely on this for critical functionality
+    if (changeData.eventType === 'DELETE') {
+        console.log('🗑️ DELETE detected - triggering quick refresh...');
+        setTimeout(() => {
+            loadTodayRfidState();
+        }, 100);
+    }
+});
+
 // Start dot animation immediately
 startDotAnimation();
 
 // Load today's RFID state from database
 async function loadTodayRfidState() {
     try {
+        console.log('🔄 Loading today\'s RFID state from database...');
+        
         const today = new Date().toISOString().split('T')[0];
         
         const logs = await window.rfidAPI.getRecentLogs(1000); // Get more logs to capture today's data
@@ -55,6 +70,12 @@ async function loadTodayRfidState() {
             return logDate === today;
         });
         
+        console.log(`📊 Found ${todayLogs.length} logs for today`);
+        
+        // Clear existing state first
+        rfidCounts = {};
+        rfidTimestamps = {};
+        
         // Group by RFID to get the latest state
         const rfidStates = {};
         
@@ -62,28 +83,39 @@ async function loadTodayRfidState() {
             if (!rfidStates[log.rfid]) {
                 rfidStates[log.rfid] = {
                     count: 0,
-                    firstTimestamp: null
+                    firstTimestamp: null,
+                    logs: []
                 };
             }
             
-            // Count taps for each RFID
-            if (log.tap_type === 'time_in') {
-                rfidStates[log.rfid].count = Math.max(rfidStates[log.rfid].count, 1);
-                rfidStates[log.rfid].firstTimestamp = new Date(log.timestamp).getTime();
-            } else if (log.tap_type === 'time_out') {
-                rfidStates[log.rfid].count = Math.max(rfidStates[log.rfid].count, 2);
-            }
+            rfidStates[log.rfid].logs.push(log);
         });
         
-        // Populate rfidCounts and rfidTimestamps
+        // Process each RFID's logs in chronological order
         Object.keys(rfidStates).forEach(rfid => {
-            rfidCounts[rfid] = rfidStates[rfid].count;
-            if (rfidStates[rfid].firstTimestamp) {
-                rfidTimestamps[rfid] = rfidStates[rfid].firstTimestamp;
+            const logs = rfidStates[rfid].logs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            let count = 0;
+            let firstTimestamp = null;
+            
+            logs.forEach(log => {
+                if (log.tap_type === 'time_in') {
+                    count = Math.max(count, 1);
+                    if (!firstTimestamp) {
+                        firstTimestamp = new Date(log.timestamp).getTime();
+                    }
+                } else if (log.tap_type === 'time_out') {
+                    count = Math.max(count, 2);
+                }
+            });
+            
+            rfidCounts[rfid] = count;
+            if (firstTimestamp) {
+                rfidTimestamps[rfid] = firstTimestamp;
             }
         });
         
-        console.log('Loaded today\'s RFID state:', rfidCounts);
+        console.log('📋 Updated RFID counts:', rfidCounts);
+        console.log('⏰ Updated RFID timestamps:', Object.keys(rfidTimestamps).length);
         
         // Load recent logs for display (last 3, most recent first)
         const sortedLogs = todayLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -107,13 +139,21 @@ async function loadTodayRfidState() {
         // Update the scan log display
         updateScanLog();
         
+        console.log('✅ RFID state loaded successfully');
+        
     } catch (error) {
-        console.error('Error loading today\'s RFID state:', error);
+        console.error('❌ Error loading today\'s RFID state:', error);
     }
 }
 
 // Load state when app starts
 loadTodayRfidState();
+
+// Reduce periodic refresh to every 5 seconds for better responsiveness
+setInterval(() => {
+    console.log('🔄 Quick periodic refresh...');
+    loadTodayRfidState();
+}, 5000);
 
 function startDotAnimation() {
     // Only start animation if window is focused
@@ -153,9 +193,13 @@ function stopDotAnimation() {
     }
 }
 
-// Main RFID scan handler - logs to database (validation already done)
+// Main RFID scan handler - checks database directly for current state
 async function handleRfidScan(rfid, tapCount) {
     try {
+        // Always check current database state before processing
+        console.log(`🔍 Checking current database state for RFID: ${rfid}`);
+        await refreshRfidState(rfid);
+        
         // Log to database (RFID already validated)
         const result = await window.rfidAPI.validateAndLogRfid(rfid, tapCount);
 
@@ -179,9 +223,16 @@ async function handleRfidScan(rfid, tapCount) {
         stopDotAnimation();
         displayText.textContent = `✓ ${studentName}`;
         dotsSpan.textContent = '';
+        
+        // Add success styling
+        const rfidDisplay = document.querySelector('.rfid-display');
+        rfidDisplay.classList.add('success');
+        
         updateScanLog();
 
         setTimeout(() => {
+            // Remove success styling and return to normal
+            rfidDisplay.classList.remove('success');
             displayText.textContent = 'Ready for RFID Scan';
             dotsSpan.textContent = '.';
             startDotAnimation();
@@ -198,6 +249,58 @@ async function handleRfidScan(rfid, tapCount) {
             dotsSpan.textContent = '.';
             startDotAnimation();
         }, 3000);
+    }
+}
+
+// Fast refresh for specific RFID - checks database directly
+async function refreshRfidState(specificRfid) {
+    try {
+        console.log(`⚡ Fast refresh for RFID: ${specificRfid}`);
+        
+        const today = new Date().toISOString().split('T')[0];
+        const logs = await window.rfidAPI.getRecentLogs(100); // Get recent logs
+        
+        // Filter for today's logs for this specific RFID
+        const todayLogsForRfid = logs.filter(log => {
+            const logDate = new Date(log.timestamp).toISOString().split('T')[0];
+            return logDate === today && log.rfid === specificRfid;
+        });
+        
+        console.log(`📊 Found ${todayLogsForRfid.length} logs for RFID ${specificRfid} today`);
+        
+        // Reset state for this RFID
+        if (todayLogsForRfid.length === 0) {
+            // No logs found - reset completely
+            delete rfidCounts[specificRfid];
+            delete rfidTimestamps[specificRfid];
+            console.log(`🧹 Cleared state for RFID ${specificRfid} - no logs found`);
+        } else {
+            // Process logs to get current state
+            const sortedLogs = todayLogsForRfid.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            let count = 0;
+            let firstTimestamp = null;
+            
+            sortedLogs.forEach(log => {
+                if (log.tap_type === 'time_in') {
+                    count = Math.max(count, 1);
+                    if (!firstTimestamp) {
+                        firstTimestamp = new Date(log.timestamp).getTime();
+                    }
+                } else if (log.tap_type === 'time_out') {
+                    count = Math.max(count, 2);
+                }
+            });
+            
+            rfidCounts[specificRfid] = count;
+            if (firstTimestamp) {
+                rfidTimestamps[specificRfid] = firstTimestamp;
+            }
+            
+            console.log(`📋 Updated state for RFID ${specificRfid}: count=${count}`);
+        }
+        
+    } catch (error) {
+        console.error(`❌ Error refreshing state for RFID ${specificRfid}:`, error);
     }
 }
 

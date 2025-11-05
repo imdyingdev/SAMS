@@ -1,6 +1,43 @@
 // Students page functionality as ES6 module
 import { initializeLogout } from './logout.js';
 
+// Helper function to format student name as "Surname, Firstname M."
+function formatStudentName(student) {
+    const lastName = student.last_name || '';
+    const firstName = student.first_name || '';
+    const middleName = student.middle_name || '';
+    const suffix = student.suffix || '';
+    
+    // Get middle initial (first character of middle name + dot)
+    const middleInitial = middleName ? middleName.charAt(0).toUpperCase() + '.' : '';
+    
+    // Build the formatted name
+    let formattedName = '';
+    
+    if (lastName) {
+        formattedName = lastName;
+    }
+    
+    if (firstName) {
+        formattedName += formattedName ? `, ${firstName}` : firstName;
+    }
+    
+    if (middleInitial) {
+        formattedName += ` ${middleInitial}`;
+    }
+    
+    if (suffix) {
+        formattedName += ` ${suffix}`;
+    }
+    
+    return formattedName.trim();
+}
+
+// Helper function to format full name (for places where full name is needed)
+function formatFullName(student) {
+    return `${student.first_name || ''} ${student.middle_name ? student.middle_name + ' ' : ''}${student.last_name || ''} ${student.suffix || ''}`.trim();
+}
+
 export function initializeStudentsPage() {
     console.log('Students page script initialized');
 
@@ -254,16 +291,23 @@ function renderStudents(students) {
     
     studentListBody.innerHTML = '';
     
-    students.forEach(student => {
+    // Sort students alphabetically by formatted name (surname first)
+    const sortedStudents = students.sort((a, b) => {
+        const nameA = formatStudentName(a).toLowerCase();
+        const nameB = formatStudentName(b).toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+    
+    sortedStudents.forEach(student => {
         const row = document.createElement('tr');
-        const fullName = `${student.first_name || ''} ${student.middle_name ? student.middle_name + ' ' : ''}${student.last_name || ''} ${student.suffix || ''}`.trim();
+        const formattedName = formatStudentName(student);
         const rfidStatus = student.rfid 
             ? `<span class="status status-assigned">${student.rfid}</span>` 
             : `<span class="status status-unassigned">Not Assigned</span>`;
 
         row.innerHTML = `
             <td>${student.lrn || 'N/A'}</td>
-            <td>${fullName}</td>
+            <td>${formattedName}</td>
             <td>${student.grade_level || 'N/A'}</td>
             <td>${student.section || 'N/A'}</td>
             <td>${rfidStatus}</td>
@@ -297,7 +341,7 @@ function renderStudents(students) {
 
 // Handle delete student
 async function handleDeleteStudent(student) {
-    const fullName = `${student.first_name || ''} ${student.middle_name ? student.middle_name + ' ' : ''}${student.last_name || ''} ${student.suffix || ''}`.trim();
+    const formattedName = formatStudentName(student);
 
     // Check user role for confirmation bypass
     const currentUser = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('user') || '{}');
@@ -305,15 +349,15 @@ async function handleDeleteStudent(student) {
 
     if (isSuperAdmin) {
         // Super Admin: Delete without confirmation
-        performStudentDeletion(student, fullName);
+        performStudentDeletion(student, formattedName);
     } else {
         // Regular Admin: Show confirmation modal
-        showDeleteConfirmationModal(student, fullName);
+        showDeleteConfirmationModal(student, formattedName);
     }
 }
 
 // Perform the actual student deletion
-async function performStudentDeletion(student, fullName) {
+async function performStudentDeletion(student, formattedName) {
     try {
         if (window.electronAPI) {
             const result = await window.electronAPI.deleteStudent(student.id);
@@ -338,7 +382,7 @@ async function performStudentDeletion(student, fullName) {
 }
 
 // Show custom delete confirmation modal for students
-function showDeleteConfirmationModal(student, fullName) {
+function showDeleteConfirmationModal(student, formattedName) {
     // Create modal overlay
     const modal = document.createElement('div');
     modal.className = 'announcement-modal';
@@ -371,7 +415,7 @@ function showDeleteConfirmationModal(student, fullName) {
     modalBody.className = 'modal-body';
 
     const message = document.createElement('p');
-    message.textContent = `Are you sure you want to delete ${fullName}? This action cannot be undone.`;
+    message.textContent = `Are you sure you want to delete ${formattedName}? This action cannot be undone.`;
     modalBody.appendChild(message);
 
     // Modal actions
@@ -396,7 +440,7 @@ function showDeleteConfirmationModal(student, fullName) {
         deleteButton.textContent = 'Deleting...';
 
         try {
-            await performStudentDeletion(student, fullName);
+            await performStudentDeletion(student, formattedName);
             document.body.removeChild(modal);
         } catch (error) {
             console.error('Error deleting student:', error);
@@ -1098,10 +1142,17 @@ function showExportSuccessModal(filePath) {
 
 // Export as CSV (working fallback)
 function exportAsCSV(students) {
+    // Sort students alphabetically by formatted name (surname first)
+    const sortedStudents = students.sort((a, b) => {
+        const nameA = formatStudentName(a).toLowerCase();
+        const nameB = formatStudentName(b).toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+
     const headers = ['LRN', 'First Name', 'Middle Name', 'Last Name', 'Suffix', 'Grade Level', 'RFID'];
     const csvContent = [
         headers.join(','),
-        ...students.map(student => [
+        ...sortedStudents.map(student => [
             student.lrn || '',
             student.first_name || '',
             student.middle_name || '',
@@ -1141,9 +1192,16 @@ async function exportAsExcel(students) {
 
 // Export as PDF using browser print
 function exportAsPDF(students) {
+    // Sort students alphabetically by formatted name (surname first)
+    const sortedStudents = students.sort((a, b) => {
+        const nameA = formatStudentName(a).toLowerCase();
+        const nameB = formatStudentName(b).toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+
     // Create a printable HTML document
     const printWindow = window.open('', '_blank');
-    const htmlContent = generatePrintableHTML(students);
+    const htmlContent = generatePrintableHTML(sortedStudents);
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
@@ -1234,12 +1292,12 @@ function generatePrintableHTML(students) {
                 </thead>
                 <tbody>
                     ${students.map(student => {
-                        const fullName = `${student.first_name || ''} ${student.middle_name ? student.middle_name + ' ' : ''}${student.last_name || ''} ${student.suffix || ''}`.trim();
+                        const formattedName = formatStudentName(student);
                         const rfidStatus = student.rfid ? student.rfid : 'Not Assigned';
                         return `
                             <tr>
                                 <td>${student.lrn || 'N/A'}</td>
-                                <td>${fullName}</td>
+                                <td>${formattedName}</td>
                                 <td>${student.grade_level || 'N/A'}</td>
                                 <td>${rfidStatus}</td>
                             </tr>
