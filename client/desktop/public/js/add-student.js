@@ -17,6 +17,12 @@ export function initializeAddStudentPage() {
     // Load LRN prefix from settings
     loadLrnPrefix();
 
+    // Set up tab switching
+    setupTabSwitching();
+
+    // Set up import button
+    setupImportButton();
+
     // Set up button event listeners
     setupAddStudentButtons();
 
@@ -160,6 +166,50 @@ function clearRetainedFormValues() {
     localStorage.removeItem('addStudentGender');
     localStorage.removeItem('addStudentGradeLevel');
     localStorage.removeItem('addStudentSection');
+}
+
+function setupTabSwitching() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
+
+            // Remove active class from all buttons and contents
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked button
+            button.classList.add('active');
+
+            // Show the corresponding tab content
+            const targetContent = document.getElementById(targetTab + '-tab');
+            if (targetContent) {
+                targetContent.classList.add('active');
+            }
+        });
+    });
+}
+
+function setupImportButton() {
+    const importButton = document.getElementById('btn-import-sf1');
+    const fileInput = document.getElementById('sf1-file-input');
+
+    if (importButton && fileInput) {
+        importButton.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                console.log('File selected:', file.name);
+                // Future: Add file processing logic here
+                alert('File selected: ' + file.name + '\n\nImport functionality will be implemented soon.');
+            }
+        });
+    }
 }
 
 function setupAddStudentButtons() {

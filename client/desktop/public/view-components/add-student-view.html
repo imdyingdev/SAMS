@@ -5,8 +5,16 @@
 
 <div style="margin-bottom: 20px;"></div>
 
+<!-- Tab Header -->
+<div class="tab-header">
+    <button class="tab-button active" data-tab="create-student">Creating Students</button>
+    <button class="tab-button" data-tab="import-sf1">Import SF1</button>
+</div>
+
 <div class="student-info-container">
-    <div class="student-info-form">
+    <!-- Tab Content: Creating Students -->
+    <div id="create-student-tab" class="tab-content active">
+        <div class="student-info-form">
         <div class="row row-4">
             <div class="field-group">
                 <label class="field-label" for="student-first-name">First Name</label>
@@ -43,7 +51,6 @@
                 <label class="field-label" for="student-grade-level">Grade Level</label>
                 <select id="student-grade-level" class="field-input">
                     <option value="">Select Grade Level</option>
-                    <option value="Kindergarten">Kindergarten</option>
                     <option value="Grade 1">Grade 1</option>
                     <option value="Grade 2">Grade 2</option>
                     <option value="Grade 3">Grade 3</option>
@@ -81,6 +88,15 @@
         <div class="action-buttons full-width">
             <button class="btn-cancel" id="btn-cancel">Cancel</button>
             <button class="btn-create" id="btn-create">Create Student</button>
+        </div>
+        </div>
+    </div>
+
+    <!-- Tab Content: Import SF1 -->
+    <div id="import-sf1-tab" class="tab-content">
+        <div class="import-sf1-container">
+            <button class="btn-import" id="btn-import-sf1">Import</button>
+            <input type="file" id="sf1-file-input" accept=".csv,.xlsx,.xls" style="display: none;">
         </div>
     </div>
 </div>
@@ -122,6 +138,78 @@
         background-color: var(--table-bg-dark);
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
         padding: 20px;
+    }
+
+    /* Tab Header Styles */
+    .tab-header {
+        display: flex;
+        gap: 0;
+        margin-bottom: 0;
+    }
+
+    .tab-button {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 12px 24px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: white;
+        border-radius: 0;
+        transition: all 0.2s;
+        opacity: 0.9;
+    }
+
+    .tab-button:hover {
+        opacity: 1;
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+    }
+
+    .tab-button.active {
+        background: var(--table-bg-dark);
+        color: var(--text-primary);
+        opacity: 1;
+    }
+
+    /* Tab Content Styles */
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* Import SF1 Container Styles */
+    .import-sf1-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 400px;
+    }
+
+    .btn-import {
+        background-color: #3B82F6;
+        color: white;
+        border: none;
+        padding: 14px 32px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1rem;
+        border-radius: 0;
+        box-shadow: 0 4px 6px rgba(59, 130, 246, 0.2);
+        transition: all 0.3s;
+    }
+
+    .btn-import:hover {
+        background-color: #2563EB;
+        box-shadow: 0 6px 8px rgba(59, 130, 246, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .btn-import:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
     }
 
     .student-info-form {
@@ -183,39 +271,49 @@
     .btn-create {
         background-color: #10B981;
         color: white;
-        border: 1px solid #10B981;
-        padding: 10px 20px;
+        border: none;
+        padding: 14px 32px;
         cursor: pointer;
-        font-weight: 500;
-        font-size: 0.9rem;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.2s;
+        font-weight: 600;
+        font-size: 1rem;
+        border-radius: 0;
+        box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+        transition: all 0.3s;
     }
 
     .btn-create:hover {
         background-color: #059669;
+        box-shadow: 0 6px 8px rgba(16, 185, 129, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .btn-create:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
     }
 
     .btn-cancel {
-        background-color: #F3F4F6;
-        color: #4B5563;
-        border: 1px solid #D1D5DB;
-        padding: 10px 20px;
+        background-color: #6B7280;
+        color: white;
+        border: none;
+        padding: 14px 32px;
         cursor: pointer;
-        font-weight: 500;
-        font-size: 0.9rem;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.2s;
+        font-weight: 600;
+        font-size: 1rem;
+        border-radius: 0;
+        box-shadow: 0 4px 6px rgba(107, 114, 128, 0.2);
+        transition: all 0.3s;
     }
 
     .btn-cancel:hover {
-        background-color: #E5E7EB;
+        background-color: #4B5563;
+        box-shadow: 0 6px 8px rgba(107, 114, 128, 0.3);
+        transform: translateY(-2px);
+    }
+
+    .btn-cancel:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(107, 114, 128, 0.2);
     }
 
     .rfid-help-wrapper {
