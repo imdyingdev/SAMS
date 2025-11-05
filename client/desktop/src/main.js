@@ -1277,13 +1277,13 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section) => {
   }
 });
 
-// Export logs handler - copies sf2.xlsx to user-selected location
+// Export logs handler - copies printable-time-in-time-out-sheet-a4.xlsx to user-selected location
 ipcMain.handle('export-logs-excel', async (event) => {
   try {
     console.log('IPC: Exporting logs to Excel');
 
     // Path to the source xlsx file (relative to project)
-    const sourceFilePath = path.join(__dirname, '../public/assets/sf2.xlsx');
+    const sourceFilePath = path.join(__dirname, '../public/assets/printable-time-in-time-out-sheet-a4.xlsx');
 
     // Check if source file exists
     if (!fs.existsSync(sourceFilePath)) {
