@@ -1,7 +1,6 @@
 # SAMS Project .gitignore
 
 # Exclude specific directories
-lottie/
 supabase/
 
 # Dependencies
