@@ -37,6 +37,9 @@ export default function DashboardScreen() {
   const [showSettings, setShowSettings] = useState(false);
   const [fabSelectedTab, setFabSelectedTab] = useState(0);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [lastViewedActivityCount, setLastViewedActivityCount] = useState(0);
+  const [totalActivityCount, setTotalActivityCount] = useState(0);
 
   const fontsLoaded = useFonts();
 
@@ -93,6 +96,19 @@ export default function DashboardScreen() {
     setFabSelectedTab(0);
     setShowSettings(false);
     setSelectedDate(null); // Reset date filter when returning to home
+    // Don't reset notification count when going to home - keep unread count
+  };
+
+  // Function to update notification count based on activity data
+  const updateNotificationCount = (activityCount: number) => {
+    setTotalActivityCount(activityCount);
+
+    // Only show notifications when in dashboard view (not activity log view)
+    if (selectedTab === 0) {
+      // Calculate unread count: current activities minus last viewed activities
+      const unreadCount = Math.max(0, activityCount - lastViewedActivityCount);
+      setUnreadNotificationCount(unreadCount);
+    }
   };
 
   const handleListPress = () => {
@@ -100,6 +116,9 @@ export default function DashboardScreen() {
     setFabSelectedTab(1);
     setShowSettings(false);
     setSelectedDate(null); // Reset date filter when going to Activity Log
+    // Mark current activities as viewed - store the current count
+    setLastViewedActivityCount(unreadNotificationCount);
+    setUnreadNotificationCount(0); // Clear notification count when viewing activity log
   };
 
   const handleSettingsPress = () => {
@@ -145,7 +164,11 @@ export default function DashboardScreen() {
       <StatusBar style="light" />
 
       {/* Fixed Header */}
-      <FixedHeader title={showSettings ? 'Settings' : selectedTab === 0 ? 'Dashboard' : 'Activity Log'} />
+      <FixedHeader
+        title={showSettings ? 'Settings' : selectedTab === 0 ? 'Dashboard' : 'Activity Log'}
+        onNotificationPress={handleListPress}
+        notificationCount={unreadNotificationCount}
+      />
 
       {showSettings ? (
         <SettingsView />
@@ -177,6 +200,7 @@ export default function DashboardScreen() {
             studentRfid={user?.rfid} // Pass user's RFID for filtering
             selectedDate={selectedTab === 0 ? selectedDate : null} // Only filter by date on home tab
             showAllRecords={selectedTab === 1} // Show all records on Activity Log tab
+            onActivityCountChange={updateNotificationCount} // Pass callback to update notification count
           />
         </>
       )}

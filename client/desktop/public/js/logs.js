@@ -51,10 +51,13 @@ export async function loadLogs(page = 1, resetFilters = false) {
     const statusIndicator = document.getElementById('logs-status-indicator');
     const paginationContainer = document.getElementById('logs-pagination-container');
 
-    // No filters since we removed search and filter UI
-    currentLogsSearchTerm = '';
-    currentLogTypeFilter = '';
-    currentDateFilter = '';
+    // Reset filters if requested
+    if (resetFilters) {
+        currentLogsSearchTerm = '';
+        currentLogTypeFilter = '';
+        const searchInput = document.getElementById('logs-search');
+        if (searchInput) searchInput.value = '';
+    }
 
     // Update current page
     currentLogsPage = page;
@@ -131,18 +134,13 @@ export async function loadLogs(page = 1, resetFilters = false) {
         // Hide status indicator when we have results
         hideLogsStatus();
         
-        // Show logs summary and list, hide status indicator
-        const logsSummary = document.getElementById('logs-summary');
-        if (logsSummary) {
-            logsSummary.style.display = 'grid';
-        }
+        // Show logs list, hide status indicator
         if (logsListContainer) {
             logsListContainer.style.display = 'flex';
         }
         if (statusIndicator) {
             statusIndicator.style.display = 'none';
         }
-        updateLogsSummary(summary);
         
         // Render logs
         renderLogs(logs);
@@ -209,15 +207,6 @@ function hideLogsStatus() {
     }
 }
 
-function updateLogsSummary(summary) {
-    const timeInCount = document.getElementById('time-in-count');
-    const timeOutCount = document.getElementById('time-out-count');
-    const totalLogsCount = document.getElementById('total-logs-count');
-    
-    if (timeInCount) timeInCount.textContent = summary.timeInToday || 0;
-    if (timeOutCount) timeOutCount.textContent = summary.timeOutToday || 0;
-    if (totalLogsCount) totalLogsCount.textContent = summary.totalLogs || 0;
-}
 
 function renderLogs(logs) {
     const logsList = document.getElementById('logs-list');
@@ -238,10 +227,20 @@ function renderLogs(logs) {
 function getStudentInitials(fullName) {
     if (!fullName || fullName === '(N/A)') return 'NA';
     
+    // Handle "SURNAME, FIRST NAME" format
+    if (fullName.includes(',')) {
+        const parts = fullName.split(',').map(p => p.trim());
+        if (parts.length >= 2) {
+            const surnameInitial = parts[0].charAt(0).toUpperCase();
+            const firstNameInitial = parts[1].split(' ')[0].charAt(0).toUpperCase();
+            return surnameInitial + firstNameInitial;
+        }
+    }
+    
+    // Fallback for other formats
     const nameParts = fullName.trim().split(' ');
     if (nameParts.length < 2) return fullName.charAt(0).toUpperCase();
     
-    // Get first letter of first name and first letter of last name
     const firstInitial = nameParts[0].charAt(0).toUpperCase();
     const lastInitial = nameParts[nameParts.length - 1].charAt(0).toUpperCase();
     
@@ -254,8 +253,19 @@ function renderLogEntry(log) {
     const logType = log.log_type || 'unknown';
     const studentName = log.student_name || '(N/A)';
     const gradeLevel = log.grade_level || '';
+    const section = log.section || '';
     const rfid = log.rfid || 'N/A';
-    const timestamp = new Date(log.timestamp);
+    // Handle timestamp - could be Date object or string
+    let timestamp;
+    if (log.timestamp instanceof Date) {
+        timestamp = log.timestamp;
+    } else if (typeof log.timestamp === 'string') {
+        // Ensure timestamp is parsed as UTC if it doesn't have timezone info
+        const timestampStr = log.timestamp.endsWith('Z') || log.timestamp.includes('+') ? log.timestamp : log.timestamp + 'Z';
+        timestamp = new Date(timestampStr);
+    } else {
+        timestamp = new Date(log.timestamp);
+    }
 
     console.log('DEBUG: Log entry fields:', {
         logType,
@@ -274,12 +284,12 @@ function renderLogEntry(log) {
 
     // Format student display name
     const displayName = studentName === '(N/A)' ? '(N/A)' :
-        gradeLevel ? `${studentName} (${gradeLevel})` : studentName;
+        gradeLevel ? `${studentName} <span class="grade-section">(${gradeLevel}${section ? ` - ${section}` : ''})</span>` : studentName;
 
     console.log('DEBUG: Display name:', displayName);
     console.log('DEBUG: Student initials:', studentInitials);
 
-    // Format timestamp
+    // Format timestamp - convert from UTC to local timezone
     const formattedTimestamp = timestamp.toLocaleString('en-US', {
         year: 'numeric',
         month: 'short',
@@ -358,9 +368,128 @@ function getLogDescription(log) {
 }
 
 export function setupLogsSearchAndFilter() {
-    // No search and filter UI, just setup pagination controls
+    // Initialize global filter variables
+    window.currentLogTypeFilter = '';
+
+    // Setup search input with debouncing
+    const searchInput = document.getElementById('logs-search');
+    let searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                triggerLogsSearch();
+            }, 300);
+        });
+    }
+
+    // Setup filter menu event listeners
+    document.querySelectorAll('[data-tap-type]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            currentLogTypeFilter = e.target.getAttribute('data-tap-type');
+            updateLogsDropdownText('Tap Type', e.target.textContent);
+            triggerLogsSearch();
+        });
+    });
+
+    // Setup date filter button
+    setupDateFilter();
+
     setupLogsPaginationControls();
     setupLogsExportButton();
+}
+
+// Setup date filter functionality
+function setupDateFilter() {
+    const dateFilterBtn = document.getElementById('date-filter-btn');
+    const datePicker = document.getElementById('date-picker');
+    const dateFilterText = document.getElementById('date-filter-text');
+
+    // Set today as default
+    currentDateFilter = 'today';
+    
+    // When button is clicked, open the date picker
+    if (dateFilterBtn && datePicker) {
+        dateFilterBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Position the date picker near the button
+            const btnRect = dateFilterBtn.getBoundingClientRect();
+            const rightOffset = 20; // Shift 20px to the right
+            const bottomOffset = 8; // 8px below button
+            
+            // Calculate position
+            let leftPos = btnRect.left + rightOffset;
+            const topPos = btnRect.bottom + bottomOffset;
+            
+            // Check if it would overflow the right edge (assume calendar width ~300px)
+            const calendarWidth = 300;
+            if (leftPos + calendarWidth > window.innerWidth) {
+                leftPos = window.innerWidth - calendarWidth - 20; // 20px from right edge
+            }
+            
+            datePicker.style.position = 'fixed';
+            datePicker.style.top = `${topPos}px`;
+            datePicker.style.left = `${leftPos}px`;
+            
+            datePicker.showPicker();
+        });
+
+        // When a date is selected
+        datePicker.addEventListener('change', (e) => {
+            const selectedDate = e.target.value; // Format: YYYY-MM-DD
+            
+            if (selectedDate) {
+                // Parse date in local timezone by splitting and using Date constructor
+                const [year, month, day] = selectedDate.split('-').map(Number);
+                const date = new Date(year, month - 1, day); // month is 0-indexed
+                
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                // Check if selected date is today
+                const selectedDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                if (selectedDateOnly.getTime() === today.getTime()) {
+                    currentDateFilter = 'today';
+                    dateFilterText.textContent = 'Today';
+                    dateFilterBtn.classList.remove('has-custom-date');
+                } else {
+                    // Use the selected date as filter (keep YYYY-MM-DD format for backend)
+                    currentDateFilter = selectedDate;
+                    // Format date nicely: "November 6"
+                    const options = { month: 'long', day: 'numeric' };
+                    dateFilterText.textContent = date.toLocaleDateString('en-US', options);
+                    dateFilterBtn.classList.add('has-custom-date');
+                }
+                
+                triggerLogsSearch();
+            }
+        });
+    }
+}
+
+// Trigger search with current filters
+function triggerLogsSearch() {
+    const searchInput = document.getElementById('logs-search');
+    currentLogsSearchTerm = searchInput ? searchInput.value : '';
+    
+    // Reset to page 1 when searching/filtering
+    loadLogs(1);
+}
+
+// Update dropdown button text
+function updateLogsDropdownText(menuType, selectedText) {
+    const defaultTexts = {
+        'Tap Type': 'Tap Type'
+    };
+
+    const linkToUpdate = Array.from(document.querySelectorAll('.filter-menu-link'))
+        .find(link => link.getAttribute('data-menu-type') === menuType);
+
+    if (linkToUpdate) {
+        linkToUpdate.textContent = selectedText || defaultTexts[menuType];
+    }
 }
 
 // Setup export button event listener

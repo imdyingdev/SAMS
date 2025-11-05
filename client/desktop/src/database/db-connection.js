@@ -13,6 +13,7 @@ const connectionString = process.env.DATABASE_URL;
 
 const poolConfig = {
   connectionString,
+  timezone: 'Asia/Manila',
 };
 
 // Only add SSL configuration for non-local connections or in production

@@ -10,7 +10,7 @@ async function saveStudent(studentData) {
 
   const insertQuery = `
     INSERT INTO students (first_name, middle_name, last_name, suffix, lrn, grade_level, section, gender, rfid)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    VALUES (INITCAP($1), INITCAP($2), INITCAP($3), INITCAP($4), $5, $6, INITCAP($7), $8, $9)
     RETURNING *;
   `;
 
@@ -87,13 +87,19 @@ async function getStudentsPaginated(page = 1, pageSize = 50, searchTerm = '', gr
     let params = [];
     let paramIndex = 1;
     
-    // Search term filter - ONLY first names that START WITH the search term
+    // Search term filter - search by name, LRN, and RFID
     if (searchTerm && searchTerm.trim()) {
-      const searchTerm_lower = searchTerm.trim().toLowerCase();
-      const startsWithPattern = `${searchTerm_lower}%`;
+      const searchValue = searchTerm.trim();
+      const searchPattern = `%${searchValue}%`;
       
-      whereConditions.push(`LOWER(first_name) LIKE $${paramIndex}`);
-      params.push(startsWithPattern);
+      whereConditions.push(`(
+        LOWER(first_name) LIKE LOWER($${paramIndex}) OR
+        LOWER(middle_name) LIKE LOWER($${paramIndex}) OR
+        LOWER(last_name) LIKE LOWER($${paramIndex}) OR
+        CAST(lrn AS TEXT) LIKE $${paramIndex} OR
+        rfid LIKE $${paramIndex}
+      )`);
+      params.push(searchPattern);
       paramIndex += 1;
     }
     
@@ -230,13 +236,13 @@ async function updateStudent(studentId, studentData) {
     const result = await query(`
       UPDATE students
       SET
-        first_name = $1,
-        middle_name = $2,
-        last_name = $3,
-        suffix = $4,
+        first_name = INITCAP($1),
+        middle_name = INITCAP($2),
+        last_name = INITCAP($3),
+        suffix = INITCAP($4),
         lrn = $5,
         grade_level = $6,
-        section = $7,
+        section = INITCAP($7),
         gender = $8,
         rfid = $9
       WHERE id = $10

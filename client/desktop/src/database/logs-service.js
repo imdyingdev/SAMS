@@ -53,7 +53,7 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
         if (searchTerm && searchTerm.trim() !== '') {
             whereConditions.push(`(
                 rl.rfid ILIKE $${paramIndex} OR
-                CONCAT(s.first_name, ' ', s.last_name) ILIKE $${paramIndex} OR
+                CONCAT(s.last_name, ', ', s.first_name) ILIKE $${paramIndex} OR
                 s.lrn::text ILIKE $${paramIndex}
             )`);
             queryParams.push(`%${searchTerm.trim()}%`);
@@ -70,19 +70,31 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
         // Date filter
         if (dateFilter && dateFilter.trim() !== '') {
             let dateCondition = '';
+            const filter = dateFilter.trim();
             
-            switch (dateFilter.trim()) {
+            switch (filter) {
                 case 'today':
-                    dateCondition = `rl.timestamp >= CURRENT_DATE AND rl.timestamp < CURRENT_DATE + INTERVAL '1 day'`;
+                    // Convert to Philippines timezone (UTC+8) for "today"
+                    dateCondition = `(rl.timestamp AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila')::date`;
                     break;
                 case 'yesterday':
-                    dateCondition = `rl.timestamp >= CURRENT_DATE - INTERVAL '1 day' AND rl.timestamp < CURRENT_DATE`;
+                    // Convert to Philippines timezone (UTC+8) for "yesterday"
+                    dateCondition = `(rl.timestamp AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila' - INTERVAL '1 day')::date`;
                     break;
                 case 'week':
-                    dateCondition = `rl.timestamp >= DATE_TRUNC('week', CURRENT_DATE) AND rl.timestamp < DATE_TRUNC('week', CURRENT_DATE) + INTERVAL '1 week'`;
+                    dateCondition = `rl.timestamp >= DATE_TRUNC('week', (NOW() AT TIME ZONE 'Asia/Manila')::date) AND rl.timestamp < DATE_TRUNC('week', (NOW() AT TIME ZONE 'Asia/Manila')::date) + INTERVAL '1 week'`;
                     break;
                 case 'month':
-                    dateCondition = `rl.timestamp >= DATE_TRUNC('month', CURRENT_DATE) AND rl.timestamp < DATE_TRUNC('month', CURRENT_DATE) + INTERVAL '1 month'`;
+                    dateCondition = `rl.timestamp >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'Asia/Manila')::date) AND rl.timestamp < DATE_TRUNC('month', (NOW() AT TIME ZONE 'Asia/Manila')::date) + INTERVAL '1 month'`;
+                    break;
+                default:
+                    // Check if it's a custom date in YYYY-MM-DD format
+                    if (/^\d{4}-\d{2}-\d{2}$/.test(filter)) {
+                        // Convert to Philippines timezone for custom date comparison
+                        dateCondition = `(rl.timestamp AT TIME ZONE 'Asia/Manila')::date = $${paramIndex}::date`;
+                        queryParams.push(filter);
+                        paramIndex++;
+                    }
                     break;
             }
             
@@ -97,7 +109,7 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
         const logsQuery = `
             SELECT
                 rl.id,
-                COALESCE(s.rfid::text, rl.rfid::text) as rfid,
+                COALESCE(s.rfid, rl.rfid) as rfid,
                 rl.tap_count,
                 rl.tap_type as log_type,
                 rl.timestamp,
@@ -105,15 +117,16 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
                 s.first_name,
                 s.last_name,
                 s.grade_level,
+                s.section,
                 s.lrn,
-                CONCAT(s.first_name, ' ', s.last_name) as student_name,
+                CONCAT(s.last_name, ', ', s.first_name) as student_name,
                 CASE
                     WHEN rl.tap_type = 'time_in' THEN 'Student Time In'
                     WHEN rl.tap_type = 'time_out' THEN 'Student Time Out'
                     ELSE 'RFID Activity'
                 END as description
             FROM rfid_logs rl
-            LEFT JOIN students s ON rl.rfid = s.rfid::text
+            LEFT JOIN students s ON rl.rfid = s.rfid
             ${whereClause}
             ORDER BY rl.timestamp DESC
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
@@ -125,7 +138,7 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
         const countQuery = `
             SELECT COUNT(*) as total
             FROM rfid_logs rl
-            LEFT JOIN students s ON rl.rfid = s.rfid::text
+            LEFT JOIN students s ON rl.rfid = s.rfid
             ${whereClause}
         `;
         
@@ -203,7 +216,7 @@ export async function getRecentLogs(limit = 10) {
         const query = `
             SELECT
                 rl.id,
-                COALESCE(s.rfid::text, rl.rfid::text) as rfid,
+                COALESCE(s.rfid, rl.rfid) as rfid,
                 rl.tap_count,
                 rl.tap_type as log_type,
                 rl.timestamp,
@@ -211,15 +224,16 @@ export async function getRecentLogs(limit = 10) {
                 s.first_name,
                 s.last_name,
                 s.grade_level,
+                s.section,
                 s.lrn,
-                CONCAT(s.first_name, ' ', s.last_name) as student_name,
+                CONCAT(s.last_name, ', ', s.first_name) as student_name,
                 CASE
                     WHEN rl.tap_type = 'time_in' THEN 'Student Time In'
                     WHEN rl.tap_type = 'time_out' THEN 'Student Time Out'
                     ELSE 'RFID Activity'
                 END as description
             FROM rfid_logs rl
-            LEFT JOIN students s ON rl.rfid = s.rfid::text
+            LEFT JOIN students s ON rl.rfid = s.rfid
             ORDER BY rl.timestamp DESC
             LIMIT $1
         `;

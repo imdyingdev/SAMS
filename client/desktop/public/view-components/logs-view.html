@@ -4,36 +4,32 @@
 </div>
 
 <div class="logs-container">
-    <!-- Summary Cards Header -->
-    <div class="logs-summary" id="logs-summary" style="display: none;">
-            <div class="summary-card">
-                <div class="summary-icon time-in">
-                    <img src="../assets/icons/logs/time-in.png" alt="Time In">
-                </div>
-                <div class="summary-content">
-                    <span class="summary-number" id="time-in-count">0</span>
-                    <span class="summary-label">Time In Today</span>
-                </div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-icon time-out">
-                    <img src="../assets/icons/logs/time-out.png" alt="Time Out">
-                </div>
-                <div class="summary-content">
-                    <span class="summary-number" id="time-out-count">0</span>
-                    <span class="summary-label">Time Out Today</span>
-                </div>
-            </div>
-            <div class="summary-card">
-                <div class="summary-icon total">
-                    <img src="../assets/icons/logs/total-tap.png" alt="Total Logs">
-                </div>
-                <div class="summary-content">
-                    <span class="summary-number" id="total-logs-count">0</span>
-                    <span class="summary-label">Total Logs</span>
-                </div>
-            </div>
+    <!-- Search and Filter Header -->
+    <div class="table-header">
+        <div class="search-container">
+            <input type="text" id="logs-search" placeholder="Search by Name, LRN, or RFID..." class="search-input">
+            <i class='bx bx-search search-icon'></i>
         </div>
+        <nav class="filter-menu">
+            <ol class="filter-menu-list">
+                <li class="filter-menu-item menu-item">
+                    <a href="#0" class="filter-menu-link" data-menu-type="Tap Type">Tap Type</a>
+                    <ol class="filter-sub-menu">
+                        <li class="filter-menu-item"><a href="#0" data-tap-type="">All</a></li>
+                        <li class="filter-menu-item"><a href="#0" data-tap-type="time_in">Time In</a></li>
+                        <li class="filter-menu-item"><a href="#0" data-tap-type="time_out">Time Out</a></li>
+                    </ol>
+                </li>
+                <li class="filter-menu-item">
+                    <a href="#0" class="filter-menu-link date-filter-btn" id="date-filter-btn">
+                        <i class='bx bx-calendar'></i>
+                        <span id="date-filter-text">Today</span>
+                    </a>
+                    <input type="date" id="date-picker" class="date-picker-hidden">
+                </li>
+            </ol>
+        </nav>
+    </div>
 
     <!-- Logs Content Area -->
     <div class="logs-content">

@@ -1005,6 +1005,26 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section) => {
       cellB.font = { size: 11 };
 
       console.log(`  ✓ Set B${targetRow} value to "${formattedName}"`);
+
+      // Copy formulas from template row (row 13) to ensure all students have proper formulas
+      if (index > 0) {
+        const templateAFCell = worksheet.getCell(`AF${maleStartRow}`);
+        const templateAGCell = worksheet.getCell(`AG${maleStartRow}`);
+        
+        if (templateAFCell.formula) {
+          const targetAFCell = worksheet.getCell(`AF${targetRow}`);
+          const adjustedFormulaAF = templateAFCell.formula.toString().replace(new RegExp(`\\b${maleStartRow}\\b`, 'g'), targetRow);
+          targetAFCell.value = { formula: adjustedFormulaAF };
+          console.log(`  ✓ Copied AF formula to row ${targetRow}`);
+        }
+        
+        if (templateAGCell.formula) {
+          const targetAGCell = worksheet.getCell(`AG${targetRow}`);
+          const adjustedFormulaAG = templateAGCell.formula.toString().replace(new RegExp(`\\b${maleStartRow}\\b`, 'g'), targetRow);
+          targetAGCell.value = { formula: adjustedFormulaAG };
+          console.log(`  ✓ Copied AG formula to row ${targetRow}`);
+        }
+      }
     });
 
     // Process female students (starting at row 64 in original template)
@@ -1023,6 +1043,31 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section) => {
       cellB.font = { size: 11 };
 
       console.log(`  ✓ Set B${targetRow} value to "${formattedName}"`);
+
+      // Copy formulas from template row (row 64) to ensure all students have proper formulas
+      // AF column: Total for the Month - formula counts days (should be =COUNTA(...))
+      // AG column: REMARKS/Days Present - formula shows total days
+      if (index > 0) {
+        // Copy AF and AG formulas from the first female row (64) to current row
+        const templateAFCell = worksheet.getCell(`AF${femaleStartRow}`);
+        const templateAGCell = worksheet.getCell(`AG${femaleStartRow}`);
+        
+        if (templateAFCell.formula) {
+          const targetAFCell = worksheet.getCell(`AF${targetRow}`);
+          // Adjust formula for current row (replace row 64 references with targetRow)
+          const adjustedFormulaAF = templateAFCell.formula.toString().replace(new RegExp(`\\b${femaleStartRow}\\b`, 'g'), targetRow);
+          targetAFCell.value = { formula: adjustedFormulaAF };
+          console.log(`  ✓ Copied AF formula to row ${targetRow}`);
+        }
+        
+        if (templateAGCell.formula) {
+          const targetAGCell = worksheet.getCell(`AG${targetRow}`);
+          // Adjust formula for current row
+          const adjustedFormulaAG = templateAGCell.formula.toString().replace(new RegExp(`\\b${femaleStartRow}\\b`, 'g'), targetRow);
+          targetAGCell.value = { formula: adjustedFormulaAG };
+          console.log(`  ✓ Copied AG formula to row ${targetRow}`);
+        }
+      }
     });
 
     // Convert shared formulas to regular formulas

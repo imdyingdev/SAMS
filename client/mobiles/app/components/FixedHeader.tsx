@@ -6,20 +6,28 @@ import CalendarScreen from './CalendarScreen';
 
 interface FixedHeaderProps {
   title?: string;
+  onNotificationPress?: () => void;
+  notificationCount?: number;
 }
 
-const FixedHeader: React.FC<FixedHeaderProps> = ({ title = 'Attendance Log' }) => {
+const FixedHeader: React.FC<FixedHeaderProps> = ({ title = 'Attendance Log', onNotificationPress, notificationCount = 0 }) => {
   return (
     <View style={styles.fixedHeader}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{title}</Text>
         <View style={styles.headerRight}>
-          <View style={styles.notificationContainer}>
+          <TouchableOpacity style={styles.notificationContainer} onPress={onNotificationPress || (() => {
+            // Default behavior: Navigate back to dashboard and switch to activity log tab
+            router.push('/dashboard' as any);
+            // Note: We can't directly set the tab state from here, but the dashboard will handle it
+          })}>
             <Image source={require('../../assets/icons/navigation/notification.png')} style={{ width: 24, height: 24, tintColor: 'white' }} />
-            <View style={styles.notificationBadge}>
-              <Text style={styles.notificationText}>1</Text>
-            </View>
-          </View>
+            {notificationCount > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationText}>{notificationCount > 99 ? '99+' : notificationCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push('/profile' as any)} style={styles.profileAvatar}>
             <Image source={require('../../assets/images/avatars/pink-alien-with-horns.png')} style={{ width: 50, height: 50, borderRadius: 25 }} />
           </TouchableOpacity>

@@ -1,0 +1,16 @@
+$env:DATABASE_URL="postgresql://postgres.dieyszynhfhlplalfawk:johngrafe104922@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+
+pg_dump --no-owner --no-acl --quote-all-identifiers --format=p --verbose `
+  --schema-only `
+  --file="C:\Users\monde\Documents\SAMS\client\structure_only.sql" `
+  $env:DATABASE_URL
+
+
+
+FULL SCHEMA
+
+$env:DATABASE_URL="postgresql://postgres.dieyszynhfhlplalfawk:johngrafe104922@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres"
+
+pg_dump --no-owner --no-acl --quote-all-identifiers --format=p --verbose `
+  --file="C:\Users\monde\Documents\SAMS\client\backup.sql" `
+  $env:DATABASE_URL

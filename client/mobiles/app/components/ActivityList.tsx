@@ -40,9 +40,10 @@ interface ActivityListProps {
   studentRfid?: string; // Optional filter by specific student RFID
   selectedDate?: Date | null; // Optional filter by specific date
   showAllRecords?: boolean; // If true, show all records (Activity Log mode)
+  onActivityCountChange?: (count: number) => void; // Callback when activity count changes
 }
 
-const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, loading = false, studentRfid, selectedDate, showAllRecords = false }) => {
+const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, loading = false, studentRfid, selectedDate, showAllRecords = false, onActivityCountChange }) => {
   const [activityData, setActivityData] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(loading);
   const [error, setError] = useState<string | null>(null);
@@ -172,11 +173,16 @@ const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, load
       }
       
       setActivityData(formattedData);
+
+      // Notify parent component of activity count change
+      onActivityCountChange?.(formattedData.length);
     } catch (err) {
       console.error('Error fetching activity data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load activity data');
       // Fallback to empty array on error
       setActivityData([]);
+      // Notify parent of zero count on error
+      onActivityCountChange?.(0);
     } finally {
       setIsLoading(false);
     }
@@ -199,22 +205,26 @@ const ActivityList: React.FC<ActivityListProps> = ({ refreshing, onRefresh, load
       // Check if there are new logs (count increased)
       if (activityData.length > previousLogCountRef.current) {
         const newLog = activityData[0]; // Most recent log is first
-        
-        // Trigger vibration
-        Vibration.vibrate([0, 250, 250, 250]); // Pattern: wait 0ms, vibrate 250ms, wait 250ms, vibrate 250ms
-        
-        // Schedule notification
-        scheduleActivityNotification(
-          newLog.student_name || 'Unknown Student',
-          newLog.tap_type,
-          newLog.time
-        );
+
+        // Only trigger notification if we're in dashboard view (not activity log view)
+        // This prevents notifications when user is already viewing the activity log
+        if (!showAllRecords) {
+          // Trigger vibration
+          Vibration.vibrate([0, 250, 250, 250]); // Pattern: wait 0ms, vibrate 250ms, wait 250ms, vibrate 250ms
+
+          // Schedule notification
+          scheduleActivityNotification(
+            newLog.student_name || 'Unknown Student',
+            newLog.tap_type,
+            newLog.time
+          );
+        }
       }
     }
-    
+
     // Update the previous count
     previousLogCountRef.current = activityData.length;
-  }, [activityData]);
+  }, [activityData, showAllRecords]);
 
   // Set up real-time subscription for rfid_logs
   useEffect(() => {

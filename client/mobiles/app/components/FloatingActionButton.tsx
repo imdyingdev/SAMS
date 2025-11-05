@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, TouchableOpacity, Animated, Dimensions, Image } from 'react-native';
 import { Colors } from '../styles/colors';
 
@@ -32,38 +32,63 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
     outputRange: ['0deg', '130deg'],
   });
 
+  // Update animations when selectedTab changes
+  useEffect(() => {
+    const targetLeft = selectedTab * buttonWidth;
+    const targetRadius = selectedTab === 1 ? 0 : 50;
+
+    Animated.parallel([
+      Animated.timing(animatedLeft, {
+        toValue: targetLeft,
+        duration: 250, // Optimized duration
+        useNativeDriver: false
+      }),
+      Animated.timing(borderRadiusAnim, {
+        toValue: targetRadius,
+        duration: 250, // Optimized duration
+        useNativeDriver: false
+      })
+    ]).start();
+  }, [selectedTab]);
+
   const handlePress = (index: number, callback?: () => void) => {
-    // Use useNativeDriver: false for left position (layout property)
-    Animated.timing(animatedLeft, {
-      toValue: index * buttonWidth,
-      duration: 300,
-      useNativeDriver: false
-    }).start();
+    // Use parallel animation for better performance
+    Animated.parallel([
+      Animated.timing(animatedLeft, {
+        toValue: index * buttonWidth,
+        duration: 250,
+        useNativeDriver: false
+      }),
+      Animated.timing(borderRadiusAnim, {
+        toValue: index === 1 ? 0 : 50,
+        duration: 250,
+        useNativeDriver: false
+      }),
+      Animated.spring(scale, {
+        toValue: 1.1,
+        friction: 4,
+        useNativeDriver: true
+      })
+    ]).start(() => {
+      // Reset scale after animation
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 4,
+        useNativeDriver: true
+      }).start();
+    });
 
-    // Animate borderRadius
-    Animated.timing(borderRadiusAnim, {
-      toValue: index === 1 ? 0 : 50,
-      duration: 300,
-      useNativeDriver: false
-    }).start();
-
-    // Use useNativeDriver: true for scale (transform property)
-    Animated.spring(scale, {
-      toValue: 1.1,
-      friction: 3,
-      useNativeDriver: true
-    }).start();
-    
     if (index === 2) { // Settings button
-      // Use useNativeDriver: true for rotation (transform property)
-      Animated.timing(rotation, { 
-        toValue: 1, 
-        duration: 500, 
-        useNativeDriver: true 
+      Animated.timing(rotation, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true
       }).start(() => {
         rotation.setValue(0); // Reset
       });
     }
+
+    // Call callback immediately
     callback?.();
   };
 

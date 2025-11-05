@@ -176,7 +176,7 @@ export default function ProfileScreen() {
           <View style={[styles.formGroup, { flex: 1, marginLeft: 6 }]}>
             <View style={styles.formInput}>
               <Text style={styles.formLabel}>Grade Level</Text>
-              <Text style={styles.inputText}>{user.gradeLevel.replace('Grade ', '').replace('K', 'Kindergarten')}</Text>
+              <Text style={styles.inputText}>{user.gradeLevel.replace('Grade ', '').replace('K', 'Kindergarten').replace('Kindergartenindergarten', 'Kindergarten')}</Text>
             </View>
           </View>
         </Animated.View>
