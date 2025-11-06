@@ -173,21 +173,43 @@ body {
     position: relative;
 }
 
-.scan-counter {
+.counters-container {
     position: absolute;
     top: 10px;
     left: 10px;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 10px;
+    z-index: 10;
+}
+
+.scan-counter {
     font-size: 14px;
     font-weight: bold;
     color: #333;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 5px 10px;
-    border-radius: 5px;
-    border: 1px solid #e0e0e0;
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
+}
+
+.scan-counter.total-counter {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+.scan-counter.total-counter .time-in-count,
+.scan-counter.total-counter .time-out-count {
+    color: white;
+}
+
+.scan-counter.grade-counter {
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
 }
 
 .scan-entry {
@@ -236,6 +258,16 @@ body {
     font-size: 18px;
     font-weight: 400;
     font-family: 'Raleway', sans-serif;
+}
+
+.time-in-count {
+    color: #22c55e;
+    font-weight: 600;
+}
+
+.time-out-count {
+    color: #ef4444;
+    font-weight: 600;
 }
 
 @media (max-width: 768px) {

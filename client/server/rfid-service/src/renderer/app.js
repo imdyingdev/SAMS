@@ -11,6 +11,8 @@ let rfidTimestamps = {}; // Track timestamp of first tap
 let pendingRfid = '';
 const TIME_WINDOW_MS = 60000; // 1 minute (change to 1800000 for 30 minutes)
 let isWindowFocused = true;
+let gradeLevelCounts = {}; // Track counts by grade level {gradeLevel: {timeIn: count, timeOut: count}}
+let gradeLevelOrder = []; // Track order of grade levels for display
 
 // Listen for window focus changes
 let previousDisplayText = '';
@@ -75,6 +77,8 @@ async function loadTodayRfidState() {
         // Clear existing state first
         rfidCounts = {};
         rfidTimestamps = {};
+        gradeLevelCounts = {};
+        gradeLevelOrder = [];
         
         // Group by RFID to get the latest state
         const rfidStates = {};
@@ -92,10 +96,14 @@ async function loadTodayRfidState() {
         });
         
         // Process each RFID's logs in chronological order
-        Object.keys(rfidStates).forEach(rfid => {
+        for (const rfid of Object.keys(rfidStates)) {
             const logs = rfidStates[rfid].logs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             let count = 0;
             let firstTimestamp = null;
+            
+            // Get student info for grade level
+            const student = await window.rfidAPI.getStudentByRfid(rfid);
+            const gradeLevel = student ? student.grade_level : null;
             
             logs.forEach(log => {
                 if (log.tap_type === 'time_in') {
@@ -112,7 +120,28 @@ async function loadTodayRfidState() {
             if (firstTimestamp) {
                 rfidTimestamps[rfid] = firstTimestamp;
             }
-        });
+            
+            // Update grade level counts
+            if (gradeLevel && count > 0) {
+                if (!gradeLevelCounts[gradeLevel]) {
+                    gradeLevelCounts[gradeLevel] = { timeIn: 0, timeOut: 0 };
+                }
+                
+                if (count === 1) {
+                    gradeLevelCounts[gradeLevel].timeIn++;
+                } else if (count === 2) {
+                    gradeLevelCounts[gradeLevel].timeIn++;
+                    gradeLevelCounts[gradeLevel].timeOut++;
+                }
+                
+                // Update grade level order (most recent activity first)
+                const index = gradeLevelOrder.indexOf(gradeLevel);
+                if (index > -1) {
+                    gradeLevelOrder.splice(index, 1);
+                }
+                gradeLevelOrder.unshift(gradeLevel);
+            }
+        }
         
         console.log('📋 Updated RFID counts:', rfidCounts);
         console.log('⏰ Updated RFID timestamps:', Object.keys(rfidTimestamps).length);
@@ -205,14 +234,36 @@ async function handleRfidScan(rfid, tapCount) {
 
         // Success - update UI
         const studentName = result.student.first_name + ' ' + result.student.last_name;
+        const gradeLevel = result.student.grade_level;
         const timestamp = new Date();
         const scanEntry = {
             rfid: rfid,
             studentName: studentName,
-            gradeLevel: result.student.grade_level,
+            gradeLevel: gradeLevel,
             timestamp: timestamp.toISOString(),
             count: tapCount
         };
+        
+        // Update grade level counts
+        if (gradeLevel) {
+            if (!gradeLevelCounts[gradeLevel]) {
+                gradeLevelCounts[gradeLevel] = { timeIn: 0, timeOut: 0 };
+            }
+            
+            if (tapCount === 1) {
+                gradeLevelCounts[gradeLevel].timeIn++;
+            } else if (tapCount === 2) {
+                // For time out, we don't increment timeIn again since it was already counted
+                gradeLevelCounts[gradeLevel].timeOut++;
+            }
+            
+            // Update grade level order (move to front)
+            const index = gradeLevelOrder.indexOf(gradeLevel);
+            if (index > -1) {
+                gradeLevelOrder.splice(index, 1);
+            }
+            gradeLevelOrder.unshift(gradeLevel);
+        }
 
         scanLog.unshift(scanEntry);
 
@@ -268,11 +319,38 @@ async function refreshRfidState(specificRfid) {
         
         console.log(`📊 Found ${todayLogsForRfid.length} logs for RFID ${specificRfid} today`);
         
+        // Get student info for grade level updates
+        const student = await window.rfidAPI.getStudentByRfid(specificRfid);
+        const gradeLevel = student ? student.grade_level : null;
+        
+        // Get previous count for this RFID to adjust grade level counts
+        const previousCount = rfidCounts[specificRfid] || 0;
+        
         // Reset state for this RFID
         if (todayLogsForRfid.length === 0) {
             // No logs found - reset completely
             delete rfidCounts[specificRfid];
             delete rfidTimestamps[specificRfid];
+            
+            // Adjust grade level counts if needed
+            if (gradeLevel && previousCount > 0 && gradeLevelCounts[gradeLevel]) {
+                if (previousCount === 1) {
+                    gradeLevelCounts[gradeLevel].timeIn = Math.max(0, gradeLevelCounts[gradeLevel].timeIn - 1);
+                } else if (previousCount === 2) {
+                    gradeLevelCounts[gradeLevel].timeIn = Math.max(0, gradeLevelCounts[gradeLevel].timeIn - 1);
+                    gradeLevelCounts[gradeLevel].timeOut = Math.max(0, gradeLevelCounts[gradeLevel].timeOut - 1);
+                }
+                
+                // Clean up grade level if no students left
+                if (gradeLevelCounts[gradeLevel].timeIn === 0 && gradeLevelCounts[gradeLevel].timeOut === 0) {
+                    delete gradeLevelCounts[gradeLevel];
+                    const index = gradeLevelOrder.indexOf(gradeLevel);
+                    if (index > -1) {
+                        gradeLevelOrder.splice(index, 1);
+                    }
+                }
+            }
+            
             console.log(`🧹 Cleared state for RFID ${specificRfid} - no logs found`);
         } else {
             // Process logs to get current state
@@ -411,9 +489,46 @@ document.getElementById('noBtn').addEventListener('click', function() {
 });
 
 function updateScanLog() {
-    const totalUnique = Object.keys(rfidCounts).length;
+    // Calculate total time in and time out
+    let totalTimeIn = 0;
+    let totalTimeOut = 0;
+    
+    Object.values(rfidCounts).forEach(count => {
+        if (count >= 1) totalTimeIn++;
+        if (count >= 2) totalTimeOut++;
+    });
+    
+    // Build counter display with separate containers
+    let counterDisplay = '<div class="counters-container">';
+    
+    // Total Students counter in its own container
+    counterDisplay += '<div class="scan-counter total-counter">';
+    if (totalTimeOut > 0) {
+        counterDisplay += `Total Students: <span class="time-out-count">${totalTimeOut}</span>/<span class="time-in-count">${totalTimeIn}</span>`;
+    } else if (totalTimeIn > 0) {
+        counterDisplay += `Total Students: <span class="time-in-count">${totalTimeIn}</span>`;
+    } else {
+        counterDisplay += 'Total Students: 0';
+    }
+    counterDisplay += '</div>';
+    
+    // Grade level counters (in order of most recent activity) - each in its own container
+    gradeLevelOrder.forEach(gradeLevel => {
+        const counts = gradeLevelCounts[gradeLevel];
+        if (counts) {
+            counterDisplay += '<div class="scan-counter grade-counter">';
+            if (counts.timeOut > 0) {
+                counterDisplay += `${gradeLevel}: <span class="time-out-count">${counts.timeOut}</span>/<span class="time-in-count">${counts.timeIn}</span>`;
+            } else if (counts.timeIn > 0) {
+                counterDisplay += `${gradeLevel}: <span class="time-in-count">${counts.timeIn}</span>`;
+            }
+            counterDisplay += '</div>';
+        }
+    });
+    
+    counterDisplay += '</div>';
 
-    scanLogDiv.innerHTML = `<div class="scan-counter">Total Student: ${totalUnique}</div>` + scanLog.map((scan) => {
+    scanLogDiv.innerHTML = counterDisplay + scanLog.map((scan) => {
         const date = new Date(scan.timestamp);
         const timeStr = date.toLocaleTimeString('en-US', {
             hour: '2-digit',
