@@ -174,7 +174,7 @@
     align-items: center;
     justify-content: center;
     flex: 1;
-    min-width: 180px; /* Give buttons more space */
+    min-width: 140px; /* Give buttons more space */
 }
 
 
@@ -206,7 +206,7 @@
     position: absolute; /* Absolute positioning */
     top: 100%; /* Position below parent */
     left: 0;
-    min-width: 180px;
+    min-width: 140px;
     /* GLASSMORPHISM EFFECT from test.html */
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
