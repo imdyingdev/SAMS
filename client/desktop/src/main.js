@@ -903,6 +903,31 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
   try {
     console.log(`IPC: Exporting SF2 attendance for grade level: ${gradeLevel}, section: ${section}, LRN prefix: ${lrnPrefix}`);
 
+    // Check if export is during active attendance hours (6 AM to 6 PM on weekdays)
+    const now = new Date();
+    const currentHour = now.getHours();
+    const dayOfWeek = now.getDay();
+    
+    // Check if it's a weekday (Monday-Friday) and between 6 AM and 6 PM
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+    const isDuringAttendanceHours = currentHour >= 6 && currentHour < 18;
+    
+    if (isWeekday && isDuringAttendanceHours) {
+      const response = await dialog.showMessageBox(BrowserWindow.getFocusedWindow(), {
+        type: 'warning',
+        title: 'Active Attendance Session',
+        message: 'The attendance session is still ongoing. Exporting now may result in incomplete data. Are you sure you want to continue?',
+        detail: 'To avoid this notification, please export after today\'s attendance session or during the weekend.',
+        buttons: ['Continue Export', 'Cancel'],
+        defaultId: 1,
+        cancelId: 1
+      });
+      
+      if (response.response === 1) {
+        return { success: false, message: 'Export cancelled by user' };
+      }
+    }
+
     // Get students for the specified grade level and section
     const students = await getStudentsForSF2(gradeLevel, section);
 
@@ -1102,6 +1127,28 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
     console.log(`📝 Male students: ${maleStudents.length}`);
     console.log(`📝 Female students: ${femaleStudents.length}`);
 
+    // Get attendance records for the current month
+    const { getAttendanceForMonth } = await import('./database/attendance-service.js');
+    const attendanceRecords = await getAttendanceForMonth(currentYear, monthIndex + 1, gradeLevel, section);
+    
+    // Create a map of student attendance by date
+    const attendanceMap = {};
+    attendanceRecords.forEach(record => {
+      const studentKey = record.student_id;
+      const dateKey = new Date(record.date).getDate();
+      
+      if (!attendanceMap[studentKey]) {
+        attendanceMap[studentKey] = {};
+      }
+      
+      attendanceMap[studentKey][dateKey] = {
+        hasTimeIn: record.time_in !== null,
+        hasTimeOut: record.time_out !== null
+      };
+    });
+    
+    console.log(`\n📊 Attendance records found: ${attendanceRecords.length}`);
+
     // Process male students (starting at row 13)
     const maleStartRow = 13;
     maleStudents.forEach((student, index) => {
@@ -1118,6 +1165,29 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
       cellB.font = { size: 11 };
 
       console.log(`  ✓ Set B${targetRow} value to "${formattedName}"`);
+
+      // Mark attendance for this student
+      const studentAttendance = attendanceMap[student.id] || {};
+      
+      // Go through each date cell and mark attendance
+      for (let col = 7; col <= 31; col++) {
+        const dateCell = worksheet.getCell(10, col);
+        const dateValue = dateCell.value;
+        
+        if (dateValue && typeof dateValue === 'number') {
+          // Check if student has attendance for this date
+          const attendance = studentAttendance[dateValue];
+          
+          if (!attendance || (!attendance.hasTimeIn && !attendance.hasTimeOut)) {
+            // Student was absent - mark with 'x'
+            const attendanceCell = worksheet.getCell(targetRow, col);
+            attendanceCell.value = 'x';
+            attendanceCell.alignment = { vertical: 'middle', horizontal: 'center' };
+            attendanceCell.font = { size: 11 };
+          }
+          // If student has attendance, leave cell empty (present)
+        }
+      }
 
       // Copy formulas from template row (row 13) to ensure all students have proper formulas
       if (index > 0) {
@@ -1156,6 +1226,29 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
       cellB.font = { size: 11 };
 
       console.log(`  ✓ Set B${targetRow} value to "${formattedName}"`);
+
+      // Mark attendance for this student
+      const studentAttendance = attendanceMap[student.id] || {};
+      
+      // Go through each date cell and mark attendance
+      for (let col = 7; col <= 31; col++) {
+        const dateCell = worksheet.getCell(10, col);
+        const dateValue = dateCell.value;
+        
+        if (dateValue && typeof dateValue === 'number') {
+          // Check if student has attendance for this date
+          const attendance = studentAttendance[dateValue];
+          
+          if (!attendance || (!attendance.hasTimeIn && !attendance.hasTimeOut)) {
+            // Student was absent - mark with 'x'
+            const attendanceCell = worksheet.getCell(targetRow, col);
+            attendanceCell.value = 'x';
+            attendanceCell.alignment = { vertical: 'middle', horizontal: 'center' };
+            attendanceCell.font = { size: 11 };
+          }
+          // If student has attendance, leave cell empty (present)
+        }
+      }
 
       // Copy formulas from template row (row 64) to ensure all students have proper formulas
       // AF column: Total for the Month - formula counts days (should be =COUNTA(...))

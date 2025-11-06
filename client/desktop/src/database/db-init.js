@@ -39,6 +39,7 @@ async function initializeTables() {
           suffix TEXT,
           lrn BIGINT UNIQUE NOT NULL,
           grade_level TEXT NOT NULL,
+          section TEXT,
           gender VARCHAR(10) CHECK (gender IN ('Male', 'Female')) DEFAULT 'Male',
           rfid TEXT UNIQUE,
           created_at TIMESTAMPTZ DEFAULT NOW()
