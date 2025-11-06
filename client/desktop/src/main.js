@@ -1149,6 +1149,44 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
     
     console.log(`\n📊 Attendance records found: ${attendanceRecords.length}`);
 
+    // Get today's date to avoid marking future dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayDate = today.getDate();
+    
+    console.log(`📅 Today's date: ${todayDate} (only marking absent for dates up to today)`);
+
+    // Ensure A1:AM2 is properly merged for SF2 title
+    try {
+      // Unmerge first if already merged to avoid errors
+      worksheet.unMergeCells('A1:AM2');
+      // Then merge again
+      worksheet.mergeCells('A1:AM2');
+      console.log('✓ Ensured A1:AM2 is merged for title');
+    } catch (error) {
+      // If error occurs, cells might not be merged, so just merge
+      try {
+        worksheet.mergeCells('A1:AM2');
+        console.log('✓ Merged A1:AM2 for title');
+      } catch (e) {
+        console.log('⚠ A1:AM2 already merged, skipping...');
+      }
+    }
+
+    // Set SF2 title text and formatting
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'School Form 2 (SF2) Daily Attendance Report of Learners';
+    titleCell.font = { 
+      name: 'Arial', 
+      size: 22, 
+      bold: true 
+    };
+    titleCell.alignment = { 
+      vertical: 'middle', 
+      horizontal: 'center' 
+    };
+    console.log('✓ Set SF2 title with formatting');
+
     // Process male students (starting at row 13)
     const maleStartRow = 13;
     maleStudents.forEach((student, index) => {
@@ -1175,17 +1213,23 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
         const dateValue = dateCell.value;
         
         if (dateValue && typeof dateValue === 'number') {
-          // Check if student has attendance for this date
-          const attendance = studentAttendance[dateValue];
-          
-          if (!attendance || (!attendance.hasTimeIn && !attendance.hasTimeOut)) {
-            // Student was absent - mark with 'x'
-            const attendanceCell = worksheet.getCell(targetRow, col);
-            attendanceCell.value = 'x';
-            attendanceCell.alignment = { vertical: 'middle', horizontal: 'center' };
-            attendanceCell.font = { size: 11 };
+          // Only check attendance for dates that have already passed
+          if (dateValue <= todayDate) {
+            // Check if student has attendance for this date
+            const attendance = studentAttendance[dateValue];
+            
+            // Student is absent only if they have NO time_in AND NO time_out
+            // Having either time_in OR time_out means they were present
+            if (!attendance || (!attendance.hasTimeIn && !attendance.hasTimeOut)) {
+              // Student was absent - mark with 'x'
+              const attendanceCell = worksheet.getCell(targetRow, col);
+              attendanceCell.value = 'x';
+              attendanceCell.alignment = { vertical: 'middle', horizontal: 'center' };
+              attendanceCell.font = { size: 11 };
+            }
+            // If student has time_in OR time_out, they're present - leave cell empty
           }
-          // If student has attendance, leave cell empty (present)
+          // Future dates are left empty (no marking)
         }
       }
 
@@ -1236,17 +1280,23 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
         const dateValue = dateCell.value;
         
         if (dateValue && typeof dateValue === 'number') {
-          // Check if student has attendance for this date
-          const attendance = studentAttendance[dateValue];
-          
-          if (!attendance || (!attendance.hasTimeIn && !attendance.hasTimeOut)) {
-            // Student was absent - mark with 'x'
-            const attendanceCell = worksheet.getCell(targetRow, col);
-            attendanceCell.value = 'x';
-            attendanceCell.alignment = { vertical: 'middle', horizontal: 'center' };
-            attendanceCell.font = { size: 11 };
+          // Only check attendance for dates that have already passed
+          if (dateValue <= todayDate) {
+            // Check if student has attendance for this date
+            const attendance = studentAttendance[dateValue];
+            
+            // Student is absent only if they have NO time_in AND NO time_out
+            // Having either time_in OR time_out means they were present
+            if (!attendance || (!attendance.hasTimeIn && !attendance.hasTimeOut)) {
+              // Student was absent - mark with 'x'
+              const attendanceCell = worksheet.getCell(targetRow, col);
+              attendanceCell.value = 'x';
+              attendanceCell.alignment = { vertical: 'middle', horizontal: 'center' };
+              attendanceCell.font = { size: 11 };
+            }
+            // If student has time_in OR time_out, they're present - leave cell empty
           }
-          // If student has attendance, leave cell empty (present)
+          // Future dates are left empty (no marking)
         }
       }
 
@@ -1457,6 +1507,17 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
     const cellAL129 = worksheet.getCell('AL129');
     cellAL129.value = { formula: 'IF(AL119=0, 0, AL127/AL123)' };
     console.log(`  ✓ Updated AL129: =IF(AL119=0, 0, AL127/AL123)`);
+
+    // Format AK127 and AL127 to show 2 decimal places
+    console.log(`\n🔧 Formatting average daily attendance cells...`);
+    
+    const cellAK127 = worksheet.getCell('AK127');
+    cellAK127.numFmt = '0.00';
+    console.log(`  ✓ Set AK127 format to 2 decimal places`);
+    
+    const cellAL127 = worksheet.getCell('AL127');
+    cellAL127.numFmt = '0.00';
+    console.log(`  ✓ Set AL127 format to 2 decimal places`);
 
     // Save the modified file
     await workbook.xlsx.writeFile(result.filePath);

@@ -6,7 +6,10 @@ async function getAttendanceForMonth(year, month, gradeLevel, section) {
     // Format month with leading zero if needed
     const monthStr = month.toString().padStart(2, '0');
     const startDate = `${year}-${monthStr}-01`;
-    const endDate = `${year}-${monthStr}-31`;
+    
+    // Calculate the actual last day of the month
+    const lastDayOfMonth = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${monthStr}-${lastDayOfMonth.toString().padStart(2, '0')}`;
     
     // Get attendance from rfid_logs table
     const result = await query(`
@@ -69,7 +72,10 @@ async function getStudentAttendanceForMonth(studentId, year, month) {
   try {
     const monthStr = month.toString().padStart(2, '0');
     const startDate = `${year}-${monthStr}-01`;
-    const endDate = `${year}-${monthStr}-31`;
+    
+    // Calculate the actual last day of the month
+    const lastDayOfMonth = new Date(year, month, 0).getDate();
+    const endDate = `${year}-${monthStr}-${lastDayOfMonth.toString().padStart(2, '0')}`;
     
     const result = await query(`
       SELECT 
