@@ -31,6 +31,15 @@ export function initializeAddStudentPage() {
 
     // Set up RFID help tooltip
     setupRfidTooltip();
+
+    // Set up Enter key navigation between inputs
+    setupEnterKeyNavigation();
+
+    // Set up gender dropdown behavior
+    setupGenderDropdownBehavior();
+
+    // Set up grade level keyboard shortcuts
+    setupGradeLevelKeyboardShortcuts();
 }
 
 function loadLrnPrefix() {
@@ -318,6 +327,8 @@ function setupRfidInput() {
 
     let isScanning = false;
     let scanBuffer = '';
+    let backspaceTooltipTimeout = null;
+    let isTooltipShownForBackspace = false;
 
     // Handle keyboard wedge RFID reader input
     rfidInput.addEventListener('keydown', (event) => {
@@ -330,13 +341,44 @@ function setupRfidInput() {
                 scanBuffer = '';
             }
         } else {
-            // Start or continue scanning
-            if (!isScanning) {
-                isScanning = true;
+            // Only capture alphanumeric characters and ignore control keys
+            const key = event.key;
+            
+            // Check if it's a valid character for RFID (alphanumeric)
+            if (key.length === 1 && /[a-zA-Z0-9]/.test(key)) {
+                // Start or continue scanning
+                if (!isScanning) {
+                    isScanning = true;
+                    scanBuffer = '';
+                }
+                scanBuffer += key;
+                // Reset backspace tooltip flag when user starts typing
+                isTooltipShownForBackspace = false;
+            } else if (key === 'Backspace' || key === 'Delete') {
+                // Allow normal backspace/delete behavior for manual editing
+                // Don't add these to scan buffer
+                isScanning = false;
                 scanBuffer = '';
+                
+                // Show tooltip on backspace (with debounce)
+                if (!isTooltipShownForBackspace) {
+                    showRfidTooltipOnBackspace();
+                    isTooltipShownForBackspace = true;
+                    
+                    // Reset the flag after a delay to allow showing again later
+                    clearTimeout(backspaceTooltipTimeout);
+                    backspaceTooltipTimeout = setTimeout(() => {
+                        isTooltipShownForBackspace = false;
+                    }, 3000); // Reset after 3 seconds
+                }
             }
-            scanBuffer += event.key;
         }
+    });
+
+    // Reset tooltip flag when field loses focus
+    rfidInput.addEventListener('blur', () => {
+        isTooltipShownForBackspace = false;
+        clearTimeout(backspaceTooltipTimeout);
     });
 }
 
@@ -387,6 +429,22 @@ function setupRfidTooltip() {
     }
 }
 
+function showRfidTooltipOnBackspace() {
+    const tooltip = document.getElementById('rfid-tooltip');
+    
+    if (tooltip) {
+        // Show the tooltip
+        tooltip.style.display = 'block';
+        console.log('Showing RFID tooltip due to backspace');
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            tooltip.style.display = 'none';
+            console.log('Auto-hiding RFID tooltip after backspace');
+        }, 3000);
+    }
+}
+
 function showSuccessModal() {
     const modal = document.getElementById('success-modal');
     if (modal) {
@@ -414,5 +472,129 @@ function hideErrorModal() {
     const modal = document.getElementById('error-modal');
     if (modal) {
         modal.style.display = 'none';
+    }
+}
+
+function setupEnterKeyNavigation() {
+    // Define the input navigation order (excluding RFID to prevent conflicts with RFID reader)
+    const inputOrder = [
+        'student-first-name',
+        'student-middle-name',
+        'student-last-name',
+        'student-suffix',
+        'student-gender',
+        'student-grade-level',
+        'student-section',
+        'student-lrn'
+        // Note: RFID input is excluded to prevent auto-submission when RFID reader sends Enter
+    ];
+
+    // Add Enter key event listeners to each input
+    inputOrder.forEach((inputId, index) => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    
+                    // Find the next input in the sequence
+                    const nextIndex = index + 1;
+                    if (nextIndex < inputOrder.length) {
+                        const nextInputId = inputOrder[nextIndex];
+                        const nextInput = document.getElementById(nextInputId);
+                        if (nextInput) {
+                            nextInput.focus();
+                        }
+                    } else {
+                        // If we're at the last input (LRN), move to RFID but don't auto-submit
+                        const rfidInput = document.getElementById('student-rfid');
+                        if (rfidInput) {
+                            rfidInput.focus();
+                        }
+                    }
+                }
+            });
+        }
+    });
+}
+
+function setupGenderDropdownBehavior() {
+    const genderSelect = document.getElementById('student-gender');
+    const genderPlaceholder = document.getElementById('gender-placeholder');
+    
+    if (genderSelect && genderPlaceholder) {
+        genderSelect.addEventListener('change', function() {
+            // If a valid gender is selected (not empty), hide the placeholder option
+            if (this.value !== '') {
+                genderPlaceholder.style.display = 'none';
+                genderPlaceholder.disabled = true;
+            }
+        });
+
+        // Also check on page load if there's a retained value
+        if (genderSelect.value !== '') {
+            genderPlaceholder.style.display = 'none';
+            genderPlaceholder.disabled = true;
+        }
+    }
+}
+
+function setupGradeLevelKeyboardShortcuts() {
+    const gradeLevelSelect = document.getElementById('student-grade-level');
+    
+    if (gradeLevelSelect) {
+        gradeLevelSelect.addEventListener('keydown', function(event) {
+            // Check if a number key (1-6) was pressed
+            const keyPressed = event.key;
+            
+            if (keyPressed >= '1' && keyPressed <= '6') {
+                event.preventDefault();
+                
+                // Set the value to the corresponding grade
+                const gradeValue = `Grade ${keyPressed}`;
+                this.value = gradeValue;
+                
+                // Trigger change event to ensure any existing listeners are called
+                const changeEvent = new Event('change', { bubbles: true });
+                this.dispatchEvent(changeEvent);
+                
+                // Close the dropdown by blurring the select element
+                this.blur();
+            }
+        });
+
+        // Also handle when the dropdown is focused and user types numbers
+        gradeLevelSelect.addEventListener('focus', function() {
+            // Add a temporary keydown listener for when dropdown is open
+            const handleKeyPress = (event) => {
+                const keyPressed = event.key;
+                
+                if (keyPressed >= '1' && keyPressed <= '6') {
+                    event.preventDefault();
+                    
+                    // Set the value to the corresponding grade
+                    const gradeValue = `Grade ${keyPressed}`;
+                    this.value = gradeValue;
+                    
+                    // Trigger change event
+                    const changeEvent = new Event('change', { bubbles: true });
+                    this.dispatchEvent(changeEvent);
+                    
+                    // Close the dropdown
+                    this.blur();
+                    
+                    // Remove this temporary listener
+                    document.removeEventListener('keydown', handleKeyPress);
+                }
+            };
+            
+            // Add temporary listener to document to catch keypresses
+            document.addEventListener('keydown', handleKeyPress);
+            
+            // Remove the listener when dropdown loses focus
+            this.addEventListener('blur', () => {
+                document.removeEventListener('keydown', handleKeyPress);
+            }, { once: true });
+        });
     }
 }

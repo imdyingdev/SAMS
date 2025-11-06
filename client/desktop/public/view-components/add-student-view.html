@@ -41,7 +41,7 @@
             <div class="field-group">
                 <label class="field-label" for="student-gender">Gender</label>
                 <select id="student-gender" class="field-input">
-                    <option value="">Select Gender</option>
+                    <option value="" id="gender-placeholder">Select Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                 </select>
@@ -77,7 +77,7 @@
                     <span class="rfid-help-wrapper">
                         <i class="fa-solid fa-question rfid-help-icon" id="rfid-help-icon" title="Focus to the Input and just tap to replace the existing rfid value"></i>
                         <div class="rfid-tooltip" id="rfid-tooltip" style="display: none;">
-                            If you're using an RFID reader, click the field and scan a new tag to automatically replace the current value.
+                            If you're using an RFID reader, click the field and <span class="tooltip-highlight">tap a new card</span> to <span class="tooltip-highlight">automatically replace</span> the current value.
                         </div>
                     </span>
                 </label>
@@ -363,6 +363,12 @@
         opacity: 1;
         visibility: visible;
         pointer-events: auto;
+    }
+
+    .tooltip-highlight {
+        color: #10B981;
+        font-weight: 600;
+        text-shadow: 0 0 2px rgba(16, 185, 129, 0.3);
     }
 
     /* Modal Styles */
