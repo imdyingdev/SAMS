@@ -1492,7 +1492,9 @@ async function showSF2ExportModal() {
             exportButton.textContent = 'Exporting...';
 
             try {
-                const result = await window.electronAPI.exportSF2Attendance(gradeLevel, section);
+                // Get LRN prefix from localStorage
+                const lrnPrefix = localStorage.getItem('lrnPrefix') || '109481';
+                const result = await window.electronAPI.exportSF2Attendance(gradeLevel, section, lrnPrefix);
 
                 if (result.success) {
                     console.log('SF2 export completed successfully:', result.filePath);

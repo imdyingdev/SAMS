@@ -65,7 +65,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportLogsExcel: () => ipcRenderer.invoke('export-logs-excel'),
   getUniqueGradeLevels: () => ipcRenderer.invoke('get-unique-grade-levels'),
   getUniqueSections: (gradeLevel) => ipcRenderer.invoke('get-unique-sections', gradeLevel),
-  exportSF2Attendance: (gradeLevel, section) => ipcRenderer.invoke('export-sf2-attendance', gradeLevel, section),
+  exportSF2Attendance: (gradeLevel, section, lrnPrefix) => ipcRenderer.invoke('export-sf2-attendance', gradeLevel, section, lrnPrefix),
 
   // RFID Scanning
   startRfidScan: () => ipcRenderer.send('rfid:start-scan'),

@@ -899,9 +899,9 @@ ipcMain.handle('get-unique-sections', async (event, gradeLevel) => {
 });
 
 // Export SF2 attendance handler
-ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section) => {
+ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPrefix) => {
   try {
-    console.log(`IPC: Exporting SF2 attendance for grade level: ${gradeLevel}, section: ${section}`);
+    console.log(`IPC: Exporting SF2 attendance for grade level: ${gradeLevel}, section: ${section}, LRN prefix: ${lrnPrefix}`);
 
     // Get students for the specified grade level and section
     const students = await getStudentsForSF2(gradeLevel, section);
@@ -955,13 +955,13 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section) => {
 
     // Metadata information
     const month = new Date().toLocaleString('default', { month: 'long' });
-    const schoolId = '104922';
+    const schoolLrn = lrnPrefix || '109481';
     const schoolName = 'AMPID ELEMENTARY SCHOOL';
-    const gradeLevelFormatted = gradeLevel === 'Kindergarten' ? 'KINDER' : gradeLevel.toUpperCase();
+    const gradeLevelFormatted = gradeLevel === 'Kindergarten' ? 'KINDER' : gradeLevel.replace(/Grade\s*/i, '').trim();
     const sectionName = section || '1';
 
     console.log(`📝 Month: ${month}`);
-    console.log(`📝 School ID: ${schoolId}`);
+    console.log(`📝 School LRN: ${schoolLrn}`);
     console.log(`📝 School Name: ${schoolName}`);
     console.log(`📝 Grade Level: ${gradeLevelFormatted}`);
     console.log(`📝 Section Name: ${sectionName}`);
@@ -972,25 +972,126 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section) => {
     cellAA6.value = month;
     console.log(`✓ Set AA6 (Month) to "${month}"`);
 
-    // Set school ID in G6
+    // Calculate dates for the month
+    const currentYear = new Date().getFullYear();
+    const monthIndex = new Date().getMonth();
+    const firstDay = new Date(currentYear, monthIndex, 1);
+    const lastDay = new Date(currentYear, monthIndex + 1, 0);
+    
+    console.log(`\n📅 Setting up calendar for ${month} ${currentYear}`);
+    console.log(`  First day: ${firstDay.toDateString()}`);
+    console.log(`  Last day: ${lastDay.toDateString()}`);
+    
+    // Clear all date cells first (G10:AE10)
+    for (let col = 7; col <= 31; col++) {
+      const cell = worksheet.getCell(10, col);
+      cell.value = '';
+    }
+    
+    // Clear all weekday headers (G11:AE11)
+    for (let col = 7; col <= 31; col++) {
+      const cell = worksheet.getCell(11, col);
+      cell.value = '';
+    }
+    
+    // Set weekday headers and dates
+    const weekdayHeaders = ['M', 'T', 'W', 'TH', 'F'];
+    const weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    
+    // Find the first Monday of the month or the first weekday
+    let firstWeekday = null;
+    let firstMondayDate = null;
+    
+    for (let date = 1; date <= lastDay.getDate(); date++) {
+      const currentDate = new Date(currentYear, monthIndex, date);
+      const dayOfWeek = currentDate.getDay();
+      
+      // Skip weekends
+      if (dayOfWeek === 0 || dayOfWeek === 6) continue;
+      
+      if (!firstWeekday) {
+        firstWeekday = date;
+      }
+      
+      if (dayOfWeek === 1) { // Monday
+        firstMondayDate = date;
+        break;
+      }
+    }
+    
+    // If no Monday found, use the first weekday
+    if (!firstMondayDate) {
+      firstMondayDate = firstWeekday;
+    }
+    
+    console.log(`  First Monday/weekday: ${firstMondayDate}`);
+    
+    // Now fill in the dates starting from the first Monday
+    let currentWeek = 0;
+    let lastWeekProcessed = -1;
+    
+    for (let date = 1; date <= lastDay.getDate(); date++) {
+      const currentDate = new Date(currentYear, monthIndex, date);
+      const dayOfWeek = currentDate.getDay();
+      
+      // Skip weekends (0 = Sunday, 6 = Saturday)
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        continue;
+      }
+      
+      // Skip dates before our first Monday/weekday
+      if (date < firstMondayDate) {
+        continue;
+      }
+      
+      // Calculate which week this date belongs to
+      // Week changes every Monday after the first one
+      if (dayOfWeek === 1 && date > firstMondayDate) {
+        currentWeek++;
+      }
+      
+      // Calculate column position
+      // Monday = 1, Tuesday = 2, Wednesday = 3, Thursday = 4, Friday = 5
+      const weekdayIndex = dayOfWeek - 1;
+      const targetColumn = 7 + (currentWeek * 5) + weekdayIndex;
+      
+      // Only set if within our column range (G to AE = columns 7 to 31)
+      if (targetColumn <= 31) {
+        // Set date in row 10
+        const dateCell = worksheet.getCell(10, targetColumn);
+        dateCell.value = date;
+        
+        // Set weekday header in row 11
+        const headerCell = worksheet.getCell(11, targetColumn);
+        headerCell.value = weekdayHeaders[weekdayIndex];
+        
+        console.log(`  Set ${weekdayNames[weekdayIndex]} ${date} at column ${getColumnLetter(targetColumn)}`);
+      } else {
+        console.log(`  Skipping ${weekdayNames[weekdayIndex]} ${date} - beyond column AE`);
+      }
+    }
+    
+    console.log(`✓ Calendar setup complete for ${month} ${currentYear}`);
+
+    // Set LRN in G6
     const cellG6 = worksheet.getCell('G6');
-    cellG6.value = schoolId;
-    console.log(`✓ Set G6 (School ID) to "${schoolId}"`);
+    cellG6.value = schoolLrn;
+    console.log(`✓ Set G6 (LRN) to "${schoolLrn}"`);
 
     // Set school name in G7
     const cellG7 = worksheet.getCell('G7');
     cellG7.value = schoolName;
     console.log(`✓ Set G7 (School Name) to "${schoolName}"`);
 
-    // Set section name in AA7
+    // Set grade level in AA7
     const cellAA7 = worksheet.getCell('AA7');
-    cellAA7.value = sectionName;
-    console.log(`✓ Set AA7 (Section Name) to "${sectionName}"`);
+    cellAA7.value = gradeLevelFormatted;
+    console.log(`✓ Set AA7 (Grade Level) to "${gradeLevelFormatted}"`);
 
-    // Set grade level in AF7
+    // Set section name in AF7
     const cellAF7 = worksheet.getCell('AF7');
-    cellAF7.value = gradeLevelFormatted;
-    console.log(`✓ Set AF7 (Grade Level) to "${gradeLevelFormatted}"`);
+    cellAF7.value = sectionName;
+    console.log(`✓ Set AF7 (Section Name) to "${sectionName}"`);
 
     console.log('\n📝 Processing students...');
 
