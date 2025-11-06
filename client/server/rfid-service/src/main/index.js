@@ -26,7 +26,8 @@ function createWindow() {
         title: 'SAMS RFID Scanner',
         frame: false,
         titleBarStyle: 'hidden',
-        fullscreen: false
+        fullscreen: false,
+        fullscreenable: true
     });
 
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
@@ -88,6 +89,13 @@ ipcMain.handle('get-today-count', async () => {
 ipcMain.handle('manual-refresh', async () => {
     console.log('🔄 Manual refresh requested');
     return { success: true, message: 'Refresh triggered' };
+});
+
+// Toggle fullscreen handler
+ipcMain.on('window:toggle-fullscreen', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.setFullScreen(!mainWindow.isFullScreen());
+    }
 });
 
 // App lifecycle

@@ -13,6 +13,7 @@ const TIME_WINDOW_MS = 60000; // 1 minute (change to 1800000 for 30 minutes)
 let isWindowFocused = true;
 let gradeLevelCounts = {}; // Track counts by grade level {gradeLevel: {timeIn: count, timeOut: count}}
 let gradeLevelOrder = []; // Track order of grade levels for display
+let gradeCountersVisible = false; // Track visibility state of grade counters (default hidden)
 
 // Listen for window focus changes
 let previousDisplayText = '';
@@ -28,14 +29,14 @@ window.rfidAPI.onFocusChanged((isFocused) => {
         // Save current display text and always show focus message
         previousDisplayText = displayText.textContent;
         stopDotAnimation();
-        displayText.textContent = 'Click here to focus before scanning...';
+        displayText.innerHTML = 'Click here to focus<br>before tap a card...';
         dotsSpan.textContent = '';
     } else {
         // Remove unfocused class
         rfidDisplay.classList.remove('unfocused');
         
         // Restore to ready state when regaining focus
-        displayText.textContent = 'Ready for RFID Scan';
+        displayText.textContent = 'Ready for RFID Tap';
         dotsSpan.textContent = '.';
         startDotAnimation();
     }
@@ -284,7 +285,7 @@ async function handleRfidScan(rfid, tapCount) {
         setTimeout(() => {
             // Remove success styling and return to normal
             rfidDisplay.classList.remove('success');
-            displayText.textContent = 'Ready for RFID Scan';
+            displayText.textContent = 'Ready for RFID Tap';
             dotsSpan.textContent = '.';
             startDotAnimation();
         }, 2000);
@@ -296,7 +297,7 @@ async function handleRfidScan(rfid, tapCount) {
         dotsSpan.textContent = '';
         
         setTimeout(() => {
-            displayText.textContent = 'Ready for RFID Scan';
+            displayText.textContent = 'Ready for RFID Tap';
             dotsSpan.textContent = '.';
             startDotAnimation();
         }, 3000);
@@ -410,7 +411,7 @@ document.addEventListener('keypress', function(e) {
                     dotsSpan.textContent = '';
                     
                     setTimeout(() => {
-                        displayText.textContent = 'Ready for RFID Scan';
+                        displayText.textContent = 'Ready for RFID Tap';
                         dotsSpan.textContent = '.';
                         startDotAnimation();
                     }, 3000);
@@ -449,7 +450,7 @@ document.addEventListener('keypress', function(e) {
                     dotsSpan.textContent = '';
                     
                     setTimeout(() => {
-                        displayText.textContent = 'Ready for RFID Scan';
+                        displayText.textContent = 'Ready for RFID Tap';
                         dotsSpan.textContent = '.';
                         startDotAnimation();
                     }, 2000);
@@ -482,7 +483,7 @@ document.getElementById('noBtn').addEventListener('click', function() {
     dotsSpan.textContent = '';
 
     setTimeout(() => {
-        displayText.textContent = 'Ready for RFID Scan';
+        displayText.textContent = 'Ready for RFID Tap';
         dotsSpan.textContent = '.';
         startDotAnimation();
     }, 2000);
@@ -516,7 +517,9 @@ function updateScanLog() {
     gradeLevelOrder.forEach(gradeLevel => {
         const counts = gradeLevelCounts[gradeLevel];
         if (counts) {
-            counterDisplay += '<div class="scan-counter grade-counter">';
+            // Apply hidden class if grade counters should be hidden
+            const hiddenClass = gradeCountersVisible ? '' : ' hidden';
+            counterDisplay += `<div class="scan-counter grade-counter${hiddenClass}">`;
             if (counts.timeOut > 0) {
                 counterDisplay += `${gradeLevel}: <span class="time-out-count">${counts.timeOut}</span>/<span class="time-in-count">${counts.timeIn}</span>`;
             } else if (counts.timeIn > 0) {
@@ -551,6 +554,54 @@ function updateScanLog() {
             </div>
         </div>`;
     }).join('');
+    
+    // Attach click event to total counter for toggling grade counters
+    attachTotalCounterToggle();
+}
+
+// Toggle grade counters visibility
+function toggleGradeCounters() {
+    gradeCountersVisible = !gradeCountersVisible;
+    const gradeCounters = document.querySelectorAll('.grade-counter');
+    
+    gradeCounters.forEach(counter => {
+        if (gradeCountersVisible) {
+            counter.classList.remove('hidden');
+        } else {
+            counter.classList.add('hidden');
+        }
+    });
+}
+
+// Attach click event listener to total counter
+function attachTotalCounterToggle() {
+    const totalCounter = document.querySelector('.total-counter');
+    if (totalCounter) {
+        // Remove any existing listener
+        totalCounter.replaceWith(totalCounter.cloneNode(true));
+        
+        // Attach new listener
+        const newTotalCounter = document.querySelector('.total-counter');
+        newTotalCounter.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleGradeCounters();
+        });
+        
+        // Prevent keyboard events
+        newTotalCounter.addEventListener('keydown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        
+        newTotalCounter.addEventListener('keypress', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+        
+        // Add cursor pointer style
+        newTotalCounter.style.cursor = 'pointer';
+    }
 }
 
 // How button and overlay handler
@@ -637,3 +688,14 @@ function toggleHowOverlay() {
         }, 600); // Match transition duration
     }
 }
+
+// Double-click to toggle fullscreen
+document.addEventListener('dblclick', (e) => {
+    // Don't trigger fullscreen if clicking on buttons or interactive elements
+    if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+        return;
+    }
+    
+    // Toggle fullscreen
+    window.rfidAPI.toggleFullscreen();
+});

@@ -51,5 +51,12 @@ contextBridge.exposeInMainWorld('rfidAPI', {
      */
     onLogChange: (callback) => {
         ipcRenderer.on('log-change', (event, changeData) => callback(changeData));
+    },
+    
+    /**
+     * Toggle fullscreen mode
+     */
+    toggleFullscreen: () => {
+        ipcRenderer.send('window:toggle-fullscreen');
     }
 });

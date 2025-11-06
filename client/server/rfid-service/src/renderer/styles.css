@@ -4,6 +4,21 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+/* Remove blue highlight on text selection */
+::selection {
+    background: transparent;
+    color: inherit;
+}
+
+::-moz-selection {
+    background: transparent;
+    color: inherit;
 }
 
 body {
@@ -198,6 +213,9 @@ body {
     color: white;
     padding: 5px 10px;
     border-radius: 5px;
+    position: relative;
+    z-index: 20;
+    cursor: pointer;
 }
 
 .scan-counter.total-counter .time-in-count,
@@ -210,6 +228,17 @@ body {
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid #e0e0e0;
     border-radius: 5px;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+    transform: translateX(0);
+    opacity: 1;
+    position: relative;
+    z-index: 10;
+}
+
+.scan-counter.grade-counter.hidden {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
 }
 
 .scan-entry {
