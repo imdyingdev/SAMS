@@ -6,21 +6,12 @@ async function getStudentStatsByGrade() {
     
     const result = await query(`
       SELECT 
-        grade_level,
-        COUNT(*) as student_count
-      FROM students 
-      GROUP BY grade_level
-      ORDER BY 
-        CASE 
-          WHEN grade_level = 'Kindergarten' OR grade_level = 'K' THEN 0
-          WHEN grade_level = 'Grade 1' OR grade_level = 'G1' THEN 1
-          WHEN grade_level = 'Grade 2' OR grade_level = 'G2' THEN 2
-          WHEN grade_level = 'Grade 3' OR grade_level = 'G3' THEN 3
-          WHEN grade_level = 'Grade 4' OR grade_level = 'G4' THEN 4
-          WHEN grade_level = 'Grade 5' OR grade_level = 'G5' THEN 5
-          WHEN grade_level = 'Grade 6' OR grade_level = 'G6' THEN 6
-          ELSE 999
-        END
+        gs.grade_level,
+        COUNT(s.id) as student_count
+      FROM grade_sections gs
+      LEFT JOIN students s ON s.grade_section_id = gs.id
+      GROUP BY gs.grade_level
+      ORDER BY gs.grade_level ASC
     `);
     
     // Create a complete dataset with all grade levels (K, G1-G6)
@@ -32,24 +23,24 @@ async function getStudentStatsByGrade() {
       statsMap[grade] = 0;
     });
     
-    // Fill in actual counts - map different grade formats to standard format
+    // Fill in actual counts - map grade numbers to display format
     result.rows.forEach(row => {
       const gradeLevel = row.grade_level;
       let mappedGrade = null;
       
-      if (gradeLevel === 'Kindergarten' || gradeLevel === 'K') {
+      if (gradeLevel === 'K' || gradeLevel === 'Kindergarten') {
         mappedGrade = 'K';
-      } else if (gradeLevel === 'Grade 1' || gradeLevel === 'G1') {
+      } else if (gradeLevel === '1') {
         mappedGrade = 'G1';
-      } else if (gradeLevel === 'Grade 2' || gradeLevel === 'G2') {
+      } else if (gradeLevel === '2') {
         mappedGrade = 'G2';
-      } else if (gradeLevel === 'Grade 3' || gradeLevel === 'G3') {
+      } else if (gradeLevel === '3') {
         mappedGrade = 'G3';
-      } else if (gradeLevel === 'Grade 4' || gradeLevel === 'G4') {
+      } else if (gradeLevel === '4') {
         mappedGrade = 'G4';
-      } else if (gradeLevel === 'Grade 5' || gradeLevel === 'G5') {
+      } else if (gradeLevel === '5') {
         mappedGrade = 'G5';
-      } else if (gradeLevel === 'Grade 6' || gradeLevel === 'G6') {
+      } else if (gradeLevel === '6') {
         mappedGrade = 'G6';
       }
       

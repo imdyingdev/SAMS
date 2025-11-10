@@ -4,7 +4,8 @@ import fs from 'fs';
 import { testConnection } from './database/db-connection.js';
 import { authenticateUser, createDefaultAdmin, updateUserRole } from './database/auth-service.js';
 import { initializeTables } from './database/db-init.js';
-import { createStudent, saveStudent, getAllStudents, getStudentsPaginated, deleteStudent, updateStudent, getStudentById, getUniqueGradeLevels, getUniqueSections, getStudentsForSF2 } from './database/student-service.js';
+import { createStudent, saveStudent, getAllStudents, getStudentsPaginated, deleteStudent, updateStudent, getStudentById, getUniqueGradeLevels, getUniqueSections, getAllUniqueSections, getStudentsForSF2, checkDuplicateLRNs, bulkImportStudents } from './database/student-service.js';
+import { extractSF1DataFromBuffer } from './services/sf1-extractor.js';
 import { getStudentStatsByGrade, getStudentStatsByGender } from './database/stats-service.js';
 import { getLogsPaginated, getRecentLogs, createLogEntry, deleteLogEntry, logRfidActivity, logStudentActivity, logAuthActivity } from './database/logs-service.js';
 import { createAnnouncement, getAllAnnouncements, getAnnouncementsCount, getAnnouncementById, updateAnnouncement, deleteAnnouncement, searchAnnouncements } from './database/announcement-service.js';
@@ -467,10 +468,10 @@ ipcMain.handle('get-all-students', async (event) => {
 });
 
 // Get paginated students handler
-ipcMain.handle('get-students-paginated', async (event, page = 1, pageSize = 50, searchTerm = '', gradeFilter = '', rfidFilter = '') => {
+ipcMain.handle('get-students-paginated', async (event, page = 1, pageSize = 50, searchTerm = '', gradeFilter = '', rfidFilter = '', sectionFilter = '') => {
   try {
     console.log(`IPC: Fetching students page ${page} with filters`);
-    const result = await getStudentsPaginated(page, pageSize, searchTerm, gradeFilter, rfidFilter);
+    const result = await getStudentsPaginated(page, pageSize, searchTerm, gradeFilter, rfidFilter, sectionFilter);
     console.log(`IPC: Sending paginated student data: ${result.students.length} students, page ${result.pagination.currentPage}/${result.pagination.totalPages}`);
     return result;
   } catch (error) {
@@ -512,6 +513,114 @@ ipcMain.handle('get-student-by-id', async (event, studentId) => {
   } catch (error) {
     console.error('IPC: Failed to get student:', error);
     throw error;
+  }
+});
+
+// Check SF1 file for duplicates before import
+ipcMain.handle('check-sf1-duplicates', async (event, fileBuffer) => {
+  try {
+    console.log('IPC: Checking SF1 file for duplicates');
+    
+    // Extract data from SF1 file (now async with ExcelJS)
+    const extractResult = await extractSF1DataFromBuffer(fileBuffer);
+    
+    if (!extractResult.success) {
+      console.error('IPC: SF1 extraction failed:', extractResult.error);
+      return {
+        success: false,
+        error: extractResult.error
+      };
+    }
+    
+    const { schoolId, gradeLevel, section, totalStudents, students } = extractResult.data;
+    
+    console.log(`IPC: Extracted ${totalStudents} students from SF1`);
+    console.log(`     Grade ${gradeLevel}, Section: ${section}`);
+    
+    // Check for duplicates and conflicts
+    const duplicateCheck = await checkDuplicateLRNs(students);
+    
+    console.log('IPC: Duplicate check result:', duplicateCheck);
+    
+    if (!duplicateCheck || !duplicateCheck.success) {
+      return {
+        success: false,
+        error: duplicateCheck?.error || 'Failed to check for duplicates'
+      };
+    }
+    
+    // Ensure arrays exist (even if empty)
+    const exactDuplicates = duplicateCheck.exactDuplicates || [];
+    const nameConflicts = duplicateCheck.nameConflicts || [];
+    
+    console.log(`IPC: Found ${exactDuplicates.length} exact duplicates, ${nameConflicts.length} name conflicts`);
+    
+    return {
+      success: true,
+      gradeLevel: gradeLevel,
+      section: section,
+      totalStudents: totalStudents,
+      students: students,  // All students from file
+      exactDuplicates: exactDuplicates,
+      nameConflicts: nameConflicts,
+      hasDuplicates: (exactDuplicates.length + nameConflicts.length) > 0
+    };
+    
+  } catch (error) {
+    console.error('IPC: SF1 duplicate check error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
+// Import SF1 file handler
+ipcMain.handle('import-sf1-file', async (event, fileBuffer, nameConflicts = []) => {
+  try {
+    console.log('IPC: Processing SF1 file import');
+    console.log(`IPC: Name conflicts to update: ${nameConflicts.length}`);
+    
+    // Extract data from SF1 file (now async with ExcelJS)
+    const extractResult = await extractSF1DataFromBuffer(fileBuffer);
+    
+    if (!extractResult.success) {
+      console.error('IPC: SF1 extraction failed:', extractResult.error);
+      return {
+        success: false,
+        error: extractResult.error
+      };
+    }
+    
+    const { schoolId, gradeLevel, section, totalStudents, students } = extractResult.data;
+    
+    console.log(`IPC: Extracted ${totalStudents} students from SF1`);
+    console.log(`     Grade ${gradeLevel}, Section: ${section}`);
+    
+    // Bulk import students (with nameConflicts for LRN updates)
+    const importResult = await bulkImportStudents(students, gradeLevel, section, nameConflicts);
+    
+    if (!importResult.success) {
+      console.error('IPC: Bulk import failed:', importResult.error);
+      return {
+        success: false,
+        error: importResult.error || 'Failed to import students'
+      };
+    }
+    
+    console.log('IPC: SF1 import completed successfully');
+    return {
+      success: true,
+      summary: importResult.summary,
+      results: importResult.results
+    };
+    
+  } catch (error) {
+    console.error('IPC: SF1 import error:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 });
 
@@ -894,6 +1003,18 @@ ipcMain.handle('get-unique-sections', async (event, gradeLevel) => {
     return { success: true, sections };
   } catch (error) {
     console.error('IPC: Failed to get unique sections:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Get all unique sections across all grade levels handler
+ipcMain.handle('get-all-unique-sections', async (event) => {
+  try {
+    console.log('IPC: Fetching all unique sections');
+    const sections = await getAllUniqueSections();
+    return { success: true, sections };
+  } catch (error) {
+    console.error('IPC: Failed to get all unique sections:', error);
     return { success: false, message: error.message };
   }
 });

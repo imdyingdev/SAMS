@@ -32,13 +32,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createStudent: (studentData) => ipcRenderer.invoke('create-student', studentData),
   saveStudent: (studentData) => ipcRenderer.invoke('save-student', studentData),
   getAllStudents: () => ipcRenderer.invoke('get-all-students'),
-  getStudentsPaginated: (page, pageSize, searchTerm, gradeFilter, rfidFilter) => 
-    ipcRenderer.invoke('get-students-paginated', page, pageSize, searchTerm, gradeFilter, rfidFilter),
+  getStudentsPaginated: (page, pageSize, searchTerm, gradeFilter, rfidFilter, sectionFilter) => 
+    ipcRenderer.invoke('get-students-paginated', page, pageSize, searchTerm, gradeFilter, rfidFilter, sectionFilter),
   deleteStudent: (studentId) => ipcRenderer.invoke('delete-student', studentId),
   updateStudent: (studentId, studentData) => ipcRenderer.invoke('update-student', { studentId, studentData }),
   getStudentById: (studentId) => ipcRenderer.invoke('get-student-by-id', studentId),
   getStudentStatsByGrade: () => ipcRenderer.invoke('get-student-stats-by-grade'),
   getStudentStatsByGender: () => ipcRenderer.invoke('get-student-stats-by-gender'),
+  checkSF1Duplicates: (fileBuffer) => ipcRenderer.invoke('check-sf1-duplicates', fileBuffer),
+  importSF1File: (fileBuffer, nameConflicts) => ipcRenderer.invoke('import-sf1-file', fileBuffer, nameConflicts),
 
   // Logs Data
   getLogsPaginated: (page, pageSize, searchTerm, logTypeFilter, dateFilter) =>
@@ -65,6 +67,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   exportLogsExcel: () => ipcRenderer.invoke('export-logs-excel'),
   getUniqueGradeLevels: () => ipcRenderer.invoke('get-unique-grade-levels'),
   getUniqueSections: (gradeLevel) => ipcRenderer.invoke('get-unique-sections', gradeLevel),
+  getAllUniqueSections: () => ipcRenderer.invoke('get-all-unique-sections'),
   exportSF2Attendance: (gradeLevel, section, lrnPrefix) => ipcRenderer.invoke('export-sf2-attendance', gradeLevel, section, lrnPrefix),
 
   // RFID Scanning

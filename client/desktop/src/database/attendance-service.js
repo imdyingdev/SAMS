@@ -17,8 +17,8 @@ async function getAttendanceForMonth(year, month, gradeLevel, section) {
         s.id as student_id,
         s.first_name,
         s.last_name,
-        s.grade_level,
-        s.section,
+        gs.grade_level,
+        gs.section_name as section,
         DATE(rl.timestamp) as date,
         rl.tap_type,
         rl.tap_count,
@@ -32,9 +32,10 @@ async function getAttendanceForMonth(year, month, gradeLevel, section) {
           ELSE NULL
         END as time_out
       FROM students s
+      JOIN grade_sections gs ON s.grade_section_id = gs.id
       LEFT JOIN rfid_logs rl ON s.rfid = rl.rfid
-      WHERE s.grade_level = $1 
-        AND s.section = $2
+      WHERE gs.grade_level = $1 
+        AND LOWER(REPLACE(gs.section_name, '.', '')) = LOWER(REPLACE($2, '.', ''))
         AND DATE(rl.timestamp) >= $3::date
         AND DATE(rl.timestamp) <= $4::date
       ORDER BY DATE(rl.timestamp) ASC, s.last_name ASC, s.first_name ASC

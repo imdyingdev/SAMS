@@ -502,6 +502,9 @@
 
 /* Override table-options spacing for logs */
 .logs-container .table-options {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
     margin: 0 !important; /* Remove ALL margins for clean flexbox distribution */
     flex-shrink: 0; /* Prevent pagination from shrinking */
     overflow: visible;
@@ -511,8 +514,7 @@
 .export-section {
     display: flex;
     align-items: center;
-    justify-content: center;
-    flex: 0.5;
+    justify-content: flex-end;
     height: 60px;
     overflow: visible;
 }
@@ -529,6 +531,15 @@
     height: 100%;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.export-btn i {
+    font-size: 1.3rem;
+    font-weight: 900;
 }
 
 .export-btn:hover {

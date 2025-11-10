@@ -116,8 +116,8 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
                 rl.created_at,
                 s.first_name,
                 s.last_name,
-                s.grade_level,
-                s.section,
+                gs.grade_level,
+                gs.section_name as section,
                 s.lrn,
                 CONCAT(s.last_name, ', ', s.first_name) as student_name,
                 CASE
@@ -127,6 +127,7 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
                 END as description
             FROM rfid_logs rl
             LEFT JOIN students s ON rl.rfid = s.rfid
+            LEFT JOIN grade_sections gs ON s.grade_section_id = gs.id
             ${whereClause}
             ORDER BY rl.timestamp DESC
             LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
@@ -139,6 +140,7 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
             SELECT COUNT(*) as total
             FROM rfid_logs rl
             LEFT JOIN students s ON rl.rfid = s.rfid
+            LEFT JOIN grade_sections gs ON s.grade_section_id = gs.id
             ${whereClause}
         `;
         
@@ -223,8 +225,8 @@ export async function getRecentLogs(limit = 10) {
                 rl.created_at,
                 s.first_name,
                 s.last_name,
-                s.grade_level,
-                s.section,
+                gs.grade_level,
+                gs.section_name as section,
                 s.lrn,
                 CONCAT(s.last_name, ', ', s.first_name) as student_name,
                 CASE
@@ -234,6 +236,7 @@ export async function getRecentLogs(limit = 10) {
                 END as description
             FROM rfid_logs rl
             LEFT JOIN students s ON rl.rfid = s.rfid
+            LEFT JOIN grade_sections gs ON s.grade_section_id = gs.id
             ORDER BY rl.timestamp DESC
             LIMIT $1
         `;

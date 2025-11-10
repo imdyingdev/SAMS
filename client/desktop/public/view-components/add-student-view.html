@@ -8,7 +8,7 @@
 <!-- Tab Header -->
 <div class="tab-header">
     <button class="tab-button active" data-tab="create-student">Creating Students</button>
-    <button class="tab-button" data-tab="import-sf1">Import SF1</button>
+    <button class="tab-button" data-tab="import-sf1">Upload SF1</button>
 </div>
 
 <div class="student-info-container">
@@ -62,7 +62,9 @@
 
             <div class="field-group">
                 <label class="field-label" for="student-section">Section</label>
-                <input type="text" id="student-section" class="field-input" placeholder="Enter section (e.g., A/B/C)">
+                <select id="student-section" class="field-input" disabled>
+                    <option value="">Select grade first</option>
+                </select>
             </div>
 
             <div class="field-group">
@@ -101,17 +103,15 @@
     </div>
 </div>
 
-<!-- Success Modal -->
-<div class="modal-overlay" id="success-modal" style="display: none;">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2>Success</h2>
-        </div>
-        <div class="modal-body">
-            <p>Student created successfully!</p>
-        </div>
-        <div class="modal-actions">
-            <button class="btn-ok" id="btn-success-ok">OK</button>
+<!-- Success Modal (Simple) -->
+<div class="validation-modal-overlay" id="success-modal" style="display: none;">
+    <div class="validation-modal-content">
+        <button class="validation-modal-close" id="success-modal-close">&times;</button>
+        <div class="validation-modal-body">
+            <div class="validation-icon">
+                <i class="fa-solid fa-circle-check success-icon"></i>
+            </div>
+            <p id="success-message">Student created successfully!</p>
         </div>
     </div>
 </div>
@@ -127,6 +127,37 @@
         </div>
         <div class="modal-actions">
             <button class="btn-ok" id="btn-error-ok">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- Validation Error Modal (Simple) -->
+<div class="validation-modal-overlay" id="validation-modal" style="display: none;">
+    <div class="validation-modal-content">
+        <button class="validation-modal-close" id="validation-modal-close">&times;</button>
+        <div class="validation-modal-body">
+            <div class="validation-icon">
+                <i class="fa-solid fa-circle-exclamation"></i>
+            </div>
+            <p id="validation-message">Please fill in all required fields.</p>
+        </div>
+    </div>
+</div>
+
+<!-- SF1 Import Confirmation Modal -->
+<div class="modal-overlay" id="sf1-confirmation-modal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px; max-height: 90vh; overflow: hidden;">
+        <div class="modal-header" style="padding: 15px 20px;">
+            <h2 style="font-size: 1.3rem;">Confirm Import</h2>
+            <button class="modal-close" id="sf1-confirmation-close">&times;</button>
+        </div>
+        <div class="modal-body" style="text-align: left; padding: 15px 20px;">
+            <p id="sf1-confirmation-message" style="color: #1f2937; line-height: 1.5; margin-bottom: 12px; text-align: center; font-size: 0.9em;">Some students already exist in the database. Do you want to continue?</p>
+            <div id="sf1-duplicate-list"></div>
+            <div class="modal-actions" style="margin-top: 15px; text-align: center;">
+                <button type="button" class="btn-cancel" id="btn-cancel-sf1-import">Cancel</button>
+                <button type="button" class="btn-create" id="btn-confirm-sf1-import" style="background: #10B981; color: white; border: none;">Continue Import</button>
+            </div>
         </div>
     </div>
 </div>
@@ -443,5 +474,108 @@
 
     #error-modal .modal-header h2 {
         color: #dc3545;
+    }
+
+    /* Validation Modal Styles */
+    .validation-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(2px);
+    }
+
+    .validation-modal-content {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        min-width: 350px;
+        max-width: 450px;
+        position: relative;
+        animation: modalSlideIn 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-20px) scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .validation-modal-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: transparent;
+        border: none;
+        font-size: 28px;
+        color: #999;
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s;
+        z-index: 1;
+    }
+
+    .validation-modal-close:hover {
+        background: #f3f4f6;
+        color: #333;
+        transform: rotate(90deg);
+    }
+
+    .validation-modal-body {
+        padding: 40px 30px 30px;
+        text-align: center;
+    }
+
+    .validation-icon {
+        margin-bottom: 20px;
+    }
+
+    .validation-icon i {
+        font-size: 3.5rem;
+        color: #ef4444;
+        animation: iconPulse 0.5s ease-out;
+    }
+
+    @keyframes iconPulse {
+        0% {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .validation-modal-body p {
+        margin: 0;
+        color: #333;
+        font-size: 1.05rem;
+        line-height: 1.6;
+        font-weight: 500;
+    }
+
+    /* Success icon styling */
+    .success-icon {
+        color: #10b981 !important;
     }
 </style>

@@ -102,6 +102,7 @@ let currentPage = 1;
 let currentPageSize = 50;
 let currentSearchTerm = '';
 let currentGradeFilter = '';
+let currentSectionFilter = '';
 let currentRfidFilter = '';
 let totalPages = 1;
 let totalStudents = 0;
@@ -121,6 +122,7 @@ export async function loadStudents(page = 1, resetFilters = false) {
     if (resetFilters) {
         currentSearchTerm = '';
         currentGradeFilter = '';
+        currentSectionFilter = '';
         currentRfidFilter = '';
         const searchInput = document.getElementById('student-search');
         if (searchInput) searchInput.value = '';
@@ -145,7 +147,8 @@ export async function loadStudents(page = 1, resetFilters = false) {
             currentPageSize, 
             currentSearchTerm, 
             currentGradeFilter, 
-            currentRfidFilter
+            currentRfidFilter,
+            currentSectionFilter
         );
         console.log('Received paginated student data:', result);
 
@@ -304,6 +307,13 @@ function renderStudents(students) {
         const rfidStatus = student.rfid 
             ? `<span class="status status-assigned">${student.rfid}</span>` 
             : `<span class="status status-unassigned">Not Assigned</span>`;
+
+        // Add gender-based class for styling
+        if (student.gender && student.gender.toLowerCase() === 'male') {
+            row.classList.add('student-male');
+        } else if (student.gender && student.gender.toLowerCase() === 'female') {
+            row.classList.add('student-female');
+        }
 
         row.innerHTML = `
             <td>${student.lrn || 'N/A'}</td>
@@ -498,11 +508,64 @@ function showErrorModal(errorMessage) {
     }, 5000);
 }
 
+// Load and populate sections dynamically
+async function loadSections(gradeLevel = null) {
+    try {
+        if (window.electronAPI) {
+            let result;
+            
+            // If a grade level is specified, get sections for that grade only
+            // Otherwise, get all sections
+            if (gradeLevel) {
+                result = await window.electronAPI.getUniqueSections(gradeLevel);
+            } else {
+                result = await window.electronAPI.getAllUniqueSections();
+            }
+            
+            if (result && result.success && result.sections) {
+                const sectionSubMenu = document.querySelector('[data-menu-type="Section"]')?.nextElementSibling;
+                
+                if (sectionSubMenu) {
+                    // Clear existing items
+                    sectionSubMenu.innerHTML = '';
+                    
+                    // Add "All Sections" option
+                    const allSectionsItem = document.createElement('li');
+                    allSectionsItem.className = 'filter-menu-item';
+                    allSectionsItem.innerHTML = '<a href="#0" data-section="">All Sections</a>';
+                    sectionSubMenu.appendChild(allSectionsItem);
+                    
+                    // Add each section
+                    result.sections.forEach(section => {
+                        const sectionItem = document.createElement('li');
+                        sectionItem.className = 'filter-menu-item';
+                        sectionItem.innerHTML = `<a href="#0" data-section="${section}">${section}</a>`;
+                        sectionSubMenu.appendChild(sectionItem);
+                    });
+                    
+                    // Re-attach event listeners for new section items
+                    document.querySelectorAll('[data-section]').forEach(link => {
+                        link.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            window.currentSectionFilter = e.target.getAttribute('data-section');
+                            updateDropdownText('Section', e.target.textContent);
+                            triggerSearch();
+                        });
+                    });
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading sections:', error);
+    }
+}
+
 // Trigger search/filter with pagination
 function triggerSearch() {
     const searchInput = document.getElementById('student-search');
     currentSearchTerm = searchInput ? searchInput.value : '';
     currentGradeFilter = window.currentGradeFilter || '';
+    currentSectionFilter = window.currentSectionFilter || '';
     currentRfidFilter = window.currentRfidFilter || '';
     
     // Reset to page 1 when searching/filtering
@@ -514,7 +577,11 @@ export function setupSearchAndFilter() {
 
     // Initialize global filter variables
     window.currentGradeFilter = '';
+    window.currentSectionFilter = '';
     window.currentRfidFilter = '';
+
+    // Load and populate sections dynamically
+    loadSections();
 
     // Debounce search input
     let searchTimeout;
@@ -525,10 +592,34 @@ export function setupSearchAndFilter() {
 
     // Setup dropdown menu event listeners
     document.querySelectorAll('[data-grade]').forEach(link => {
+        link.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const selectedGrade = e.target.getAttribute('data-grade');
+            window.currentGradeFilter = selectedGrade;
+            
+            // Reset section filter when grade changes
+            window.currentSectionFilter = '';
+            updateDropdownText('Section', 'Section');
+            
+            // Reload sections for the selected grade
+            if (selectedGrade) {
+                // Pass grade number directly to backend (1, 2, 3, etc.)
+                await loadSections(selectedGrade);
+            } else {
+                // If "All Grades" is selected, show all sections
+                await loadSections();
+            }
+            
+            updateDropdownText('Grade Level', e.target.textContent);
+            triggerSearch();
+        });
+    });
+
+    document.querySelectorAll('[data-section]').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            window.currentGradeFilter = e.target.getAttribute('data-grade');
-            updateDropdownText('Grade Level', e.target.textContent);
+            window.currentSectionFilter = e.target.getAttribute('data-section');
+            updateDropdownText('Section', e.target.textContent);
             triggerSearch();
         });
     });
@@ -552,6 +643,7 @@ export function setupSearchAndFilter() {
 function updateDropdownText(menuType, selectedText) {
     const defaultTexts = {
         'Grade Level': 'Grades',
+        'Section': 'Section',
         'RFID Assignment': 'RFID'
     };
 
@@ -559,7 +651,7 @@ function updateDropdownText(menuType, selectedText) {
         .find(link => link.dataset.menuType === menuType);
 
     if (linkToUpdate) {
-        if (selectedText === 'All Grades' || selectedText === 'All') {
+        if (selectedText === 'All Grades' || selectedText === 'All Sections' || selectedText === 'All' || selectedText === 'Both') {
             linkToUpdate.textContent = defaultTexts[menuType];
         } else {
             linkToUpdate.textContent = selectedText;
@@ -927,8 +1019,8 @@ async function handleExport() {
     try {
         // Show loading state
         const exportButton = document.querySelector('.export-section button');
-        const originalText = exportButton.textContent;
-        exportButton.textContent = 'Exporting...';
+        const originalHTML = exportButton.innerHTML;
+        exportButton.innerHTML = '<i class="bx bx-download"></i> Downloading...';
         exportButton.disabled = true;
 
         // Get all students (not paginated) for export
@@ -946,16 +1038,15 @@ async function handleExport() {
 
         // Create export options
         const exportOptions = [
-            { label: 'Export as Excel', action: () => exportAsExcel(result.students) },
-            { label: 'Export as PDF', action: () => exportAsPDF(result.students) },
-            { label: 'Export SF2 Attendance', action: () => showSF2ExportModal() }
+            { label: 'Download Overall List', action: () => exportAsExcel(result.students) },
+            { label: 'Download SF2 Attendance', action: () => showSF2ExportModal() }
         ];
 
         // Show export dialog
         showExportDialog(exportOptions);
 
         // Reset button
-        exportButton.textContent = originalText;
+        exportButton.innerHTML = originalHTML;
         exportButton.disabled = false;
 
     } catch (error) {
@@ -965,7 +1056,7 @@ async function handleExport() {
         // Reset button
         const exportButton = document.querySelector('.export-section button');
         if (exportButton) {
-            exportButton.textContent = 'Export';
+            exportButton.innerHTML = '<i class="bx bx-download"></i> Download';
             exportButton.disabled = false;
         }
     }
@@ -999,7 +1090,7 @@ function showExportDialog(options) {
 
     // Title
     const title = document.createElement('h3');
-    title.textContent = 'Export Students';
+    title.textContent = 'Students Report';
     title.style.cssText = 'margin: 0 0 20px 0; color: #333;';
     modalContent.appendChild(title);
 

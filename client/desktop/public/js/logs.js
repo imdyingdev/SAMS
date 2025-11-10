@@ -494,23 +494,39 @@ function updateLogsDropdownText(menuType, selectedText) {
 
 // Setup export button event listener
 function setupLogsExportButton() {
-    const exportSection = document.querySelector('.logs-container .export-section button');
+    const exportButton = document.querySelector('.logs-container .export-section button');
     
-    if (exportSection) {
-        exportSection.addEventListener('click', async () => {
+    if (exportButton) {
+        exportButton.addEventListener('click', async () => {
             try {
-                console.log('Export logs button clicked');
+                // Show loading state
+                const originalHTML = exportButton.innerHTML;
+                exportButton.innerHTML = '<i class="bx bx-download"></i> Downloading...';
+                exportButton.disabled = true;
+                
+                console.log('Download logs button clicked');
                 const result = await window.electronAPI.exportLogsExcel();
                 
+                // Reset button
+                exportButton.innerHTML = originalHTML;
+                exportButton.disabled = false;
+                
                 if (result.success) {
-                    console.log('Logs exported successfully:', result.filePath);
+                    console.log('Logs downloaded successfully:', result.filePath);
                     // You can add a success notification here if needed
                 } else {
-                    console.error('Export failed:', result.message);
-                    // You can add an error notification here if needed
+                    if (result.message !== 'Export cancelled by user') {
+                        console.error('Download failed:', result.message);
+                        alert('Download failed: ' + result.message);
+                    }
                 }
             } catch (error) {
-                console.error('Failed to export logs:', error);
+                console.error('Failed to download logs:', error);
+                alert('Failed to download logs: ' + error.message);
+                
+                // Reset button on error
+                exportButton.innerHTML = '<i class="bx bx-download"></i> Download';
+                exportButton.disabled = false;
             }
         });
     }
