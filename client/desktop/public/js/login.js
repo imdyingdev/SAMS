@@ -95,7 +95,44 @@ export async function handleSignIn(event) {
         }
         
         const result = await window.electronAPI.login({ username, password });
-        console.log('Received response from main process:', result);
+        console.log('📥 Received response from main process:', result);
+        
+        // Display authentication logs from server
+        if (result.authLogs && result.authLogs.length > 0) {
+            console.group('🔐 AUTHENTICATION LOGS');
+            result.authLogs.forEach(log => {
+                if (log.includes('ERROR') || log.includes('FAILED')) {
+                    console.error(log);
+                } else if (log.includes('SUCCESSFUL')) {
+                    console.log('%c' + log, 'color: green; font-weight: bold');
+                } else {
+                    console.log(log);
+                }
+            });
+            console.groupEnd();
+        }
+        
+        // Display all debug information
+        if (result.debugInfo) {
+            console.group('🔍 DEBUG INFORMATION');
+            console.log('Database Connected:', result.debugInfo.databaseConnected);
+            console.log('Working Directory:', result.debugInfo.workingDirectory);
+            console.log('Node Environment:', result.debugInfo.nodeEnv);
+            console.log('Timestamp:', result.debugInfo.timestamp);
+            
+            if (result.debugInfo.errorMessage) {
+                console.error('❌ Error Message:', result.debugInfo.errorMessage);
+            }
+            if (result.debugInfo.errorStack) {
+                console.error('📋 Error Stack:', result.debugInfo.errorStack);
+            }
+            console.groupEnd();
+        }
+        
+        // Log detailed error if available
+        if (result.error) {
+            console.error('❌ Detailed error:', result.error);
+        }
         
         if (result.success) {
             console.log('Login successful. Storing user and navigating.');

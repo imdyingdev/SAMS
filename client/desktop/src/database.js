@@ -107,9 +107,8 @@ async function authenticateUser(username, password) {
     const user = result.rows[0];
     console.log(`User found: ${user.username} (${user.role})`);
     
-    // Check password
-    const bcrypt = await import('bcrypt');
-    const isPasswordValid = await bcrypt.default.compare(password, user.password_hash);
+    // Check password - PLAIN TEXT COMPARISON (INSECURE)
+    const isPasswordValid = password === user.password_hash;
     
     if (!isPasswordValid) {
       console.log('Invalid password');
@@ -244,9 +243,8 @@ async function createDefaultAdmin() {
   try {
     console.log('Creating default admin user...');
     
-    const bcrypt = await import('bcrypt');
     const defaultPassword = 'admin123';
-    const hashedPassword = await bcrypt.default.hash(defaultPassword, 10);
+    const hashedPassword = defaultPassword; // Plain text password (INSECURE)
     
     const result = await query(`
       INSERT INTO admin_users (username, password_hash, role)

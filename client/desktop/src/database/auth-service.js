@@ -1,19 +1,24 @@
 import { query } from './db-connection.js';
+// bcrypt removed - using plain text passwords (INSECURE - FOR TESTING ONLY)
 
 // Login function with better error handling
 async function authenticateUser(username, password) {
+  const logs = [];
+  
   try {
+    logs.push('[AUTH] Starting authentication...');
 
     // First, check if ANY admin users exist in the database
     const adminCountQuery = `SELECT COUNT(*) as count FROM admin_users WHERE is_active = true`;
     const countResult = await query(adminCountQuery);
     const adminCount = parseInt(countResult.rows[0].count);
+    logs.push(`[AUTH] Active admin users: ${adminCount}`);
 
     // If no admin users exist, auto-regenerate the default admin
     if (adminCount === 0) {
-      console.warn('[AUTH] No admin users found - auto-regenerating default admin');
+      logs.push('[AUTH] No admin users found - auto-regenerating default admin');
       await createDefaultAdmin();
-      console.log('[AUTH] Default admin user regenerated');
+      logs.push('[AUTH] Default admin user regenerated');
     }
 
     // Query to find user by username
@@ -26,28 +31,40 @@ async function authenticateUser(username, password) {
     const result = await query(userQuery, [username]);
 
     if (result.rows.length === 0) {
+      logs.push('[AUTH] User not found in database');
       return {
         success: false,
-        message: 'Invalid username or password'
+        message: 'Invalid username or password',
+        authLogs: logs
       };
     }
 
     const user = result.rows[0];
+    
+    logs.push('[AUTH] User found in database');
+    logs.push(`[AUTH] Username: ${user.username}`);
+    logs.push(`[AUTH] Password provided: "${password}"`);
+    logs.push(`[AUTH] Password in DB: "${user.password_hash}"`);
+    logs.push(`[AUTH] Password in DB length: ${user.password_hash ? user.password_hash.length : 0}`);
 
-    // Check password
-    const bcrypt = await import('bcrypt');
-    const isPasswordValid = await bcrypt.default.compare(password, user.password_hash);
+    // Check password - PLAIN TEXT COMPARISON (INSECURE)
+    const isPasswordValid = password === user.password_hash;
+    logs.push(`[AUTH] Password match: ${isPasswordValid}`);
+    logs.push(`[AUTH] Comparison: "${password}" === "${user.password_hash}" = ${isPasswordValid}`);
 
     if (!isPasswordValid) {
       await logLoginAttempt(user.id, false);
+      logs.push('[AUTH] Login FAILED - password mismatch');
       return {
         success: false,
-        message: 'Invalid username or password'
+        message: 'Invalid username or password',
+        authLogs: logs
       };
     }
 
     // Log successful login
     await logLoginAttempt(user.id, true);
+    logs.push('[AUTH] Login SUCCESSFUL');
 
     return {
       success: true,
@@ -56,14 +73,22 @@ async function authenticateUser(username, password) {
         id: user.id,
         username: user.username,
         role: user.role
-      }
+      },
+      authLogs: logs
     };
 
   } catch (error) {
-    console.error('Authentication error:', error.message);
+    logs.push(`[AUTH] ERROR: ${error.message}`);
+    logs.push(`[AUTH] Error stack: ${error.stack}`);
+    logs.push(`[AUTH] DATABASE_URL exists: ${!!process.env.DATABASE_URL}`);
+    
+    console.error('[AUTH] Authentication error:', error.message);
+    console.error('[AUTH] Error stack:', error.stack);
+    
     return {
       success: false,
-      message: 'An error occurred during login. Please try again.'
+      message: 'An error occurred during login. Please try again.',
+      authLogs: logs
     };
   }
 }
@@ -96,9 +121,8 @@ async function createDefaultAdmin() {
     }
 
     // Create new admin if it doesn't exist
-    const bcrypt = await import('bcrypt');
     const defaultPassword = 'admin123';
-    const hashedPassword = await bcrypt.default.hash(defaultPassword, 10);
+    const hashedPassword = defaultPassword; // Plain text password (INSECURE)
 
     const result = await query(`
       INSERT INTO admin_users (username, password_hash, role, is_active)

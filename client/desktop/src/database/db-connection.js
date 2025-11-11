@@ -1,15 +1,60 @@
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+// Get the app root directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Try multiple paths for .env file (dev vs production)
+const possibleEnvPaths = [
+  path.join(process.cwd(), '.env'),                    // Current working directory
+  path.join(__dirname, '../../.env'),                  // From src/database to root (dev)
+];
+
+// Add production paths only if process.resourcesPath is defined (Electron environment)
+if (process.resourcesPath) {
+  possibleEnvPaths.push(
+    path.join(process.resourcesPath, '.env'),          // Production: resources folder
+    path.join(process.resourcesPath, '../.env')        // Production: one level up
+  );
+}
+
+console.log('[DB] Searching for .env file...');
+let envPath = null;
+for (const testPath of possibleEnvPaths) {
+  if (fs.existsSync(testPath)) {
+    envPath = testPath;
+    console.log('[DB] Found .env at:', envPath);
+    break;
+  }
+}
+
+if (!envPath) {
+  console.error('[DB] WARNING: .env file not found in any expected location');
+  console.error('[DB] Searched paths:', possibleEnvPaths);
+}
 
 // Suppress dotenv verbose output
 const originalLog = console.log;
 console.log = () => {};
-dotenv.config();
+dotenv.config({ path: envPath });
 console.log = originalLog;
 
 // Conditionally apply SSL configuration
 const isProduction = process.env.NODE_ENV === 'production';
 const connectionString = process.env.DATABASE_URL;
+
+// Debug logging for production builds
+if (!connectionString) {
+  console.error('[DB] ERROR: DATABASE_URL is not defined!');
+  console.error('[DB] Current working directory:', process.cwd());
+  console.error('[DB] NODE_ENV:', process.env.NODE_ENV);
+} else {
+  console.log('[DB] Database connection configured');
+}
 
 const poolConfig = {
   connectionString,

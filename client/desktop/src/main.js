@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, ipcMain, dialog } from 'electron';
+import { app, BrowserWindow, Menu, ipcMain, dialog, globalShortcut } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { testConnection } from './database/db-connection.js';
@@ -258,6 +258,25 @@ app.whenReady().then(() => {
     console.error('[APP] Failed to create window:', error);
   });
 
+  // Register global shortcuts for DevTools (works in production builds)
+  globalShortcut.register('CommandOrControl+Shift+I', () => {
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    if (focusedWindow) {
+      focusedWindow.webContents.toggleDevTools();
+      console.log('[APP] DevTools toggled via Ctrl+Shift+I');
+    }
+  });
+
+  globalShortcut.register('F12', () => {
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    if (focusedWindow) {
+      focusedWindow.webContents.toggleDevTools();
+      console.log('[APP] DevTools toggled via F12');
+    }
+  });
+
+  console.log('[APP] DevTools shortcuts registered: Ctrl+Shift+I and F12');
+
   // macOS specific: Re-create window when dock icon is clicked
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -271,6 +290,8 @@ app.on('before-quit', () => {
   if (port && port.isOpen) {
     port.close();
   }
+  // Unregister all shortcuts
+  globalShortcut.unregisterAll();
 });
 
 app.on('window-all-closed', () => {
@@ -628,11 +649,36 @@ ipcMain.handle('import-sf1-file', async (event, fileBuffer, nameConflicts = []) 
 ipcMain.handle('auth:login', async (event, credentials) => {
   try {
     console.log('IPC: Authenticating user:', credentials.username);
+    console.log('IPC: DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('IPC: Working directory:', process.cwd());
+    
     const result = await authenticateUser(credentials.username, credentials.password);
+    console.log('IPC: Auth result:', result);
+    
+    // Add debug info to the result
+    result.debugInfo = {
+      databaseConnected: !!process.env.DATABASE_URL,
+      workingDirectory: process.cwd(),
+      nodeEnv: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
+    };
+    
     return result;
   } catch (error) {
     console.error('IPC: Authentication failed:', error);
-    throw error;
+    console.error('IPC: Error stack:', error.stack);
+    // Return detailed error information
+    return {
+      success: false,
+      message: `Error: ${error.message}`,
+      debugInfo: {
+        errorMessage: error.message,
+        errorStack: error.stack,
+        databaseConnected: !!process.env.DATABASE_URL,
+        workingDirectory: process.cwd(),
+        nodeEnv: process.env.NODE_ENV
+      }
+    };
   }
 });
 
