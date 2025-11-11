@@ -29,7 +29,7 @@ window.initializeStudentChart = async function initializeStudentChart(elementId 
         
         // Get real data from database if not provided
         let chartData = data;
-        let gradeLabels = ['K', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6'];
+        let gradeLabels = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'];
         
         if (!chartData && window.electronAPI && window.electronAPI.getStudentStatsByGrade) {
             try {
@@ -40,11 +40,11 @@ window.initializeStudentChart = async function initializeStudentChart(elementId 
                 console.log('Successfully loaded student statistics:', stats);
             } catch (error) {
                 console.error('Failed to fetch student statistics, using sample data:', error);
-                chartData = [0, 0, 0, 0, 0, 0, 0]; // Default to zeros if database fails
+                chartData = [0, 0, 0, 0, 0, 0]; // Default to zeros if database fails
             }
         } else if (!chartData) {
             // Fallback sample data if no electronAPI available
-            chartData = [50, 150, 99, 22, 88, 75, 1];
+            chartData = [150, 99, 22, 88, 75, 1];
         }
         
         const option = {

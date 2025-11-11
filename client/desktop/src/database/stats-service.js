@@ -14,8 +14,8 @@ async function getStudentStatsByGrade() {
       ORDER BY gs.grade_level ASC
     `);
     
-    // Create a complete dataset with all grade levels (K, G1-G6)
-    const gradeOrder = ['K', 'G1', 'G2', 'G3', 'G4', 'G5', 'G6'];
+    // Create a complete dataset with all grade levels (G1-G6)
+    const gradeOrder = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'];
     const statsMap = {};
     
     // Initialize all grades with 0
@@ -28,9 +28,7 @@ async function getStudentStatsByGrade() {
       const gradeLevel = row.grade_level;
       let mappedGrade = null;
       
-      if (gradeLevel === 'K' || gradeLevel === 'Kindergarten') {
-        mappedGrade = 'K';
-      } else if (gradeLevel === '1') {
+      if (gradeLevel === '1') {
         mappedGrade = 'G1';
       } else if (gradeLevel === '2') {
         mappedGrade = 'G2';

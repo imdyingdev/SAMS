@@ -61,6 +61,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Attendance Statistics
   getTodayAttendanceStats: () => ipcRenderer.invoke('get-today-attendance-stats'),
+  getWeeklyAttendanceStats: () => ipcRenderer.invoke('get-weekly-attendance-stats'),
 
   // Export functionality
   exportStudentsExcel: (students) => ipcRenderer.invoke('export-students-excel', students),

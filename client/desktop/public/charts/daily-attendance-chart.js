@@ -1,5 +1,5 @@
 // Daily Attendance Chart using ECharts
-function initDailyAttendanceChart() {
+async function initDailyAttendanceChart() {
     var chartDom = document.getElementById('daily-attendance-chart');
     if (!chartDom) {
         console.error('Chart container not found');
@@ -15,13 +15,34 @@ function initDailyAttendanceChart() {
     chartDom.style.overflow = 'visible'; // Allow tooltips to overflow and be visible
     
     var myChart = echarts.init(chartDom);
+    
+    // Get real data from database (weekdays only)
+    let weeklyLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+    let weeklyData = [0, 0, 0, 0, 0];
+    
+    if (window.electronAPI && window.electronAPI.getWeeklyAttendanceStats) {
+        try {
+            console.log('Fetching real weekly attendance data from database...');
+            const stats = await window.electronAPI.getWeeklyAttendanceStats();
+            if (stats.success) {
+                weeklyLabels = stats.labels;
+                weeklyData = stats.data;
+                console.log('Successfully loaded weekly attendance statistics:', stats);
+            } else {
+                console.error('Failed to fetch weekly attendance statistics:', stats.error);
+            }
+        } catch (error) {
+            console.error('Error fetching weekly attendance statistics:', error);
+        }
+    }
+    
     var option = {
         tooltip: {
             trigger: 'axis'
         },
         xAxis: {
             type: 'category',
-            data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            data: weeklyLabels,
             axisLabel: {
                 color: '#ffffff'
             },
@@ -50,7 +71,7 @@ function initDailyAttendanceChart() {
         series: [
             {
                 name: 'Daily Attendance',
-                data: [820, 932, 901, 934, 1290, 1330, 1320],
+                data: weeklyData,
                 type: 'line',
                 smooth: true,
                 lineStyle: {

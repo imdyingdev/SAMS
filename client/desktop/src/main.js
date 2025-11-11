@@ -9,7 +9,7 @@ import { extractSF1DataFromBuffer } from './services/sf1-extractor.js';
 import { getStudentStatsByGrade, getStudentStatsByGender } from './database/stats-service.js';
 import { getLogsPaginated, getRecentLogs, createLogEntry, deleteLogEntry, logRfidActivity, logStudentActivity, logAuthActivity } from './database/logs-service.js';
 import { createAnnouncement, getAllAnnouncements, getAnnouncementsCount, getAnnouncementById, updateAnnouncement, deleteAnnouncement, searchAnnouncements } from './database/announcement-service.js';
-import { getTodayAttendanceStats } from './database/attendance-stats-service.js';
+import { getTodayAttendanceStats, getWeeklyAttendanceStats } from './database/attendance-stats-service.js';
 import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
 import { fileURLToPath } from 'url';
@@ -851,6 +851,18 @@ ipcMain.handle('get-today-attendance-stats', async (event) => {
     return result;
   } catch (error) {
     console.error('IPC: Failed to get today\'s attendance statistics:', error);
+    throw error;
+  }
+});
+
+// Get weekly attendance statistics handler
+ipcMain.handle('get-weekly-attendance-stats', async (event) => {
+  try {
+    console.log('IPC: Fetching weekly attendance statistics');
+    const result = await getWeeklyAttendanceStats();
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to get weekly attendance statistics:', error);
     throw error;
   }
 });
