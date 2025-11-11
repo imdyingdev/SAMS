@@ -19,7 +19,7 @@ function createWindow() {
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
-            preload: path.join(__dirname, '../preload/index.js')
+            preload: path.join(__dirname, '../../dist/preload.js')
         },
         alwaysOnTop: false,
         resizable: false,
@@ -30,7 +30,7 @@ function createWindow() {
         fullscreenable: true
     });
 
-    mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    mainWindow.loadFile(path.join(__dirname, '../../dist/renderer/index.html'));
 
     // Track window focus state
     mainWindow.on('focus', () => {

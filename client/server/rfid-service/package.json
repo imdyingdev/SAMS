@@ -4,13 +4,55 @@
   "description": "RFID Service for retrieving student information",
   "main": "src/main/index.js",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron . --dev"
+    "build": "node build.js",
+    "start": "npm run build && electron .",
+    "dev": "electron . --dev",
+    "dist-win": "npm run build && electron-builder --win"
+  },
+  "build": {
+    "appId": "com.sams.rfidservice",
+    "productName": "SAMS RFID Service",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "src/**/*",
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraFiles": [
+      {
+        "from": ".env",
+        "to": ".env"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "SAMS RFID Service.exe"
+    }
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.1",
-    "dotenv": "^16.6.1",
-    "electron": "^25.0.0"
+    "dotenv": "^16.6.1"
+  },
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.0.0"
   },
   "keywords": [
     "rfid",
