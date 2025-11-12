@@ -104,7 +104,7 @@ async function loadTodayRfidState() {
             
             // Get student info for grade level
             const student = await window.rfidAPI.getStudentByRfid(rfid);
-            const gradeLevel = student ? student.grade_level : null;
+            const gradeLevel = student ? student.grade_sections.grade_level : null;
             
             logs.forEach(log => {
                 if (log.tap_type === 'time_in') {
@@ -160,7 +160,7 @@ async function loadTodayRfidState() {
             scanLog.push({
                 rfid: log.rfid,
                 studentName: student ? `${student.first_name} ${student.last_name}` : null,
-                gradeLevel: student ? student.grade_level : null,
+                gradeLevel: student ? student.grade_sections.grade_level : null,
                 timestamp: log.timestamp,
                 count: log.tap_count
             });
@@ -235,7 +235,7 @@ async function handleRfidScan(rfid, tapCount) {
 
         // Success - update UI
         const studentName = result.student.first_name + ' ' + result.student.last_name;
-        const gradeLevel = result.student.grade_level;
+        const gradeLevel = result.student.grade_sections.grade_level;
         const timestamp = new Date();
         const scanEntry = {
             rfid: rfid,
@@ -322,7 +322,7 @@ async function refreshRfidState(specificRfid) {
         
         // Get student info for grade level updates
         const student = await window.rfidAPI.getStudentByRfid(specificRfid);
-        const gradeLevel = student ? student.grade_level : null;
+        const gradeLevel = student ? student.grade_sections.grade_level : null;
         
         // Get previous count for this RFID to adjust grade level counts
         const previousCount = rfidCounts[specificRfid] || 0;

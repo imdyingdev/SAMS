@@ -10,7 +10,14 @@ async function getStudentByRfid(rfid) {
     try {
         const { data, error } = await supabase
             .from('students')
-            .select('id, first_name, middle_name, last_name, grade_level, lrn')
+            .select(`
+                id,
+                first_name,
+                middle_name,
+                last_name,
+                lrn,
+                grade_sections!inner(grade_level, section_name)
+            `)
             .eq('rfid', rfid)
             .single();
 
@@ -34,7 +41,13 @@ async function getAllStudentsWithRfid() {
     try {
         const { data, error } = await supabase
             .from('students')
-            .select('id, first_name, last_name, grade_level, rfid')
+            .select(`
+                id,
+                first_name,
+                last_name,
+                grade_sections!inner(grade_level, section_name),
+                rfid
+            `)
             .not('rfid', 'is', null);
 
         if (error) {
