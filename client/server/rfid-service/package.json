@@ -51,8 +51,8 @@
     "dotenv": "^16.6.1"
   },
   "devDependencies": {
-    "electron": "^25.0.0",
-    "electron-builder": "^24.0.0"
+    "electron": "^32.0.0",
+    "electron-builder": "^25.0.0"
   },
   "keywords": [
     "rfid",
@@ -60,6 +60,9 @@
     "student",
     "service"
   ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "author": "SAMS Team",
   "license": "MIT"
 }

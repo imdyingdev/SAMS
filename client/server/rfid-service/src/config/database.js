@@ -24,8 +24,8 @@ const supabase = createClient(
 );
 
 // Test connection and log status
-console.log('🔗 Supabase client initialized');
-console.log('📡 Real-time enabled for database changes');
+console.log('Supabase client initialized');
+console.log('Real-time enabled for database changes');
 
 module.exports = {
     supabase

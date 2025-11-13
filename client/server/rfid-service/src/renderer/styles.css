@@ -57,7 +57,28 @@ body {
     background: #22c55e; /* Good green color for white text */
 }
 
+.rfid-display.processing {
+    /* Processing state styles - background gradient applied via JavaScript */
+    transition: background-image 0.3s ease;
+}
+
+.rfid-display.processing .display-text {
+    color: white;
+}
+
+.rfid-display.processing .dots {
+    color: white;
+}
+
 .rfid-display.success .display-text {
+    color: white;
+}
+
+.rfid-display.completed .display-text {
+    color: white;
+}
+
+.rfid-display.not-found .display-text {
     color: white;
 }
 

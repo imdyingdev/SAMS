@@ -22,7 +22,11 @@ async function getStudentByRfid(rfid) {
             .single();
 
         if (error) {
-            console.error('Error fetching student:', error);
+            if (error.code === 'PGRST116') {
+                console.log(`RFID ${rfid} not found in database`);
+            } else {
+                console.error('Error fetching student:', error.message);
+            }
             return null;
         }
 
