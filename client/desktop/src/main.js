@@ -160,7 +160,21 @@ project/
     }
   });
 
+  mainWindow.on('maximize', () => {
+    mainWindow.webContents.send('window-state-changed', { isMaximized: true, isFullScreen: mainWindow.isFullScreen() });
+  });
 
+  mainWindow.on('unmaximize', () => {
+    mainWindow.webContents.send('window-state-changed', { isMaximized: false, isFullScreen: mainWindow.isFullScreen() });
+  });
+
+  mainWindow.on('enter-full-screen', () => {
+    mainWindow.webContents.send('window-state-changed', { isMaximized: mainWindow.isMaximized(), isFullScreen: true });
+  });
+
+  mainWindow.on('leave-full-screen', () => {
+    mainWindow.webContents.send('window-state-changed', { isMaximized: mainWindow.isMaximized(), isFullScreen: false });
+  });
 
   // Handle window closed
   mainWindow.on('closed', () => {
@@ -1277,6 +1291,13 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
     
     console.log(`✓ Calendar setup complete for ${month} ${currentYear}`);
 
+    // Set total working days formula (count of dates in header row)
+    const totalDaysCell = worksheet.getCell('AQ10');
+    totalDaysCell.value = { formula: 'COUNT(G10:AE10)' };
+    totalDaysCell.alignment = { vertical: 'middle', horizontal: 'center' };
+    totalDaysCell.font = { size: 11 };
+    console.log(`✓ Set AQ10 formula: =COUNT(G10:AE10) (total working days)`);
+
     // Set LRN in G6
     const cellG6 = worksheet.getCell('G6');
     cellG6.value = schoolLrn;
@@ -1412,25 +1433,23 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
         }
       }
 
-      // Copy formulas from template row (row 13) to ensure all students have proper formulas
-      if (index > 0) {
-        const templateAFCell = worksheet.getCell(`AF${maleStartRow}`);
-        const templateAGCell = worksheet.getCell(`AG${maleStartRow}`);
-        
-        if (templateAFCell.formula) {
-          const targetAFCell = worksheet.getCell(`AF${targetRow}`);
-          const adjustedFormulaAF = templateAFCell.formula.toString().replace(new RegExp(`\\b${maleStartRow}\\b`, 'g'), targetRow);
-          targetAFCell.value = { formula: adjustedFormulaAF };
-          console.log(`  ✓ Copied AF formula to row ${targetRow}`);
-        }
-        
-        if (templateAGCell.formula) {
-          const targetAGCell = worksheet.getCell(`AG${targetRow}`);
-          const adjustedFormulaAG = templateAGCell.formula.toString().replace(new RegExp(`\\b${maleStartRow}\\b`, 'g'), targetRow);
-          targetAGCell.value = { formula: adjustedFormulaAG };
-          console.log(`  ✓ Copied AG formula to row ${targetRow}`);
-        }
-      }
+      // Set AF formula for each student individually (Total absent days)
+      // AF = Count of 'x' marks (absences) in the attendance range
+      const targetAFCell = worksheet.getCell(`AF${targetRow}`);
+      const afFormula = `COUNTA(G${targetRow}:AE${targetRow})`;
+      targetAFCell.value = { formula: afFormula };
+      targetAFCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      targetAFCell.font = { size: 11 };
+      console.log(`  ✓ Set AF${targetRow} formula: =${afFormula}`);
+
+      // Set AG formula for each student individually (Total present days)
+      // AG = Count of empty cells in attendance range minus empty cells in header
+      const targetAGCell = worksheet.getCell(`AG${targetRow}`);
+      const agFormula = `COUNTIF(G${targetRow}:AE${targetRow}, "") - COUNTIF(G10:AE10, "")`;
+      targetAGCell.value = { formula: agFormula };
+      targetAGCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      targetAGCell.font = { size: 11 };
+      console.log(`  ✓ Set AG${targetRow} formula: =${agFormula}`);
     });
 
     // Process female students (starting at row 64 in original template)
@@ -1479,30 +1498,23 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
         }
       }
 
-      // Copy formulas from template row (row 64) to ensure all students have proper formulas
-      // AF column: Total for the Month - formula counts days (should be =COUNTA(...))
-      // AG column: REMARKS/Days Present - formula shows total days
-      if (index > 0) {
-        // Copy AF and AG formulas from the first female row (64) to current row
-        const templateAFCell = worksheet.getCell(`AF${femaleStartRow}`);
-        const templateAGCell = worksheet.getCell(`AG${femaleStartRow}`);
-        
-        if (templateAFCell.formula) {
-          const targetAFCell = worksheet.getCell(`AF${targetRow}`);
-          // Adjust formula for current row (replace row 64 references with targetRow)
-          const adjustedFormulaAF = templateAFCell.formula.toString().replace(new RegExp(`\\b${femaleStartRow}\\b`, 'g'), targetRow);
-          targetAFCell.value = { formula: adjustedFormulaAF };
-          console.log(`  ✓ Copied AF formula to row ${targetRow}`);
-        }
-        
-        if (templateAGCell.formula) {
-          const targetAGCell = worksheet.getCell(`AG${targetRow}`);
-          // Adjust formula for current row
-          const adjustedFormulaAG = templateAGCell.formula.toString().replace(new RegExp(`\\b${femaleStartRow}\\b`, 'g'), targetRow);
-          targetAGCell.value = { formula: adjustedFormulaAG };
-          console.log(`  ✓ Copied AG formula to row ${targetRow}`);
-        }
-      }
+      // Set AF formula for each female student individually (Total absent days)
+      // AF = Count of 'x' marks (absences) in the attendance range
+      const targetAFCell = worksheet.getCell(`AF${targetRow}`);
+      const afFormula = `COUNTA(G${targetRow}:AE${targetRow})`;
+      targetAFCell.value = { formula: afFormula };
+      targetAFCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      targetAFCell.font = { size: 11 };
+      console.log(`  ✓ Set AF${targetRow} formula: =${afFormula}`);
+
+      // Set AG formula for each female student individually (Total present days)
+      // AG = Count of empty cells in attendance range minus empty cells in header
+      const targetAGCell = worksheet.getCell(`AG${targetRow}`);
+      const agFormula = `COUNTIF(G${targetRow}:AE${targetRow}, "") - COUNTIF(G10:AE10, "")`;
+      targetAGCell.value = { formula: agFormula };
+      targetAGCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      targetAGCell.font = { size: 11 };
+      console.log(`  ✓ Set AG${targetRow} formula: =${agFormula}`);
     });
 
     // Convert shared formulas to regular formulas

@@ -204,7 +204,34 @@ async function initializeHomeView() {
         // Load today's attendance stats
         console.log('Explicitly loading today\'s attendance stats...');
         loadTodayAttendanceStats();
+
+        setTimeout(() => {
+            resizeDashboardCharts();
+        }, 300);
+
+        if (window.electronAPI && window.electronAPI.onWindowStateChange && !window.__samsWindowStateResizeRegistered) {
+            window.__samsWindowStateResizeRegistered = true;
+            window.electronAPI.onWindowStateChange(() => {
+                resizeDashboardCharts();
+            });
+        }
     }, 300); // Increased timeout to ensure DOM is fully ready
+}
+
+function resizeDashboardCharts() {
+    if (!window.echarts) {
+        return;
+    }
+
+    ['student-chart', 'gender-chart', 'daily-attendance-chart'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            const chartInstance = window.echarts.getInstanceByDom(el);
+            if (chartInstance) {
+                chartInstance.resize();
+            }
+        }
+    });
 }
 
 async function initializeStudentsView() {

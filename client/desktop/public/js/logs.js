@@ -408,46 +408,48 @@ function setupDateFilter() {
 
     // Set today as default
     currentDateFilter = 'today';
-    
+
     // When button is clicked, open the date picker
     if (dateFilterBtn && datePicker) {
         dateFilterBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            
+
             // Position the date picker near the button
             const btnRect = dateFilterBtn.getBoundingClientRect();
             const rightOffset = 20; // Shift 20px to the right
             const bottomOffset = 8; // 8px below button
-            
+
             // Calculate position
             let leftPos = btnRect.left + rightOffset;
             const topPos = btnRect.bottom + bottomOffset;
-            
+
             // Check if it would overflow the right edge (assume calendar width ~300px)
             const calendarWidth = 300;
             if (leftPos + calendarWidth > window.innerWidth) {
                 leftPos = window.innerWidth - calendarWidth - 20; // 20px from right edge
             }
-            
+
+            datePicker.style.display = 'block'; // Show the element
             datePicker.style.position = 'fixed';
             datePicker.style.top = `${topPos}px`;
             datePicker.style.left = `${leftPos}px`;
-            
+            datePicker.style.pointerEvents = 'all'; // Enable pointer events when visible
+
             datePicker.showPicker();
         });
 
-        // When a date is selected
+        // When a date is selected or picker is closed
         datePicker.addEventListener('change', (e) => {
             const selectedDate = e.target.value; // Format: YYYY-MM-DD
-            
+
             if (selectedDate) {
                 // Parse date in local timezone by splitting and using Date constructor
                 const [year, month, day] = selectedDate.split('-').map(Number);
                 const date = new Date(year, month - 1, day); // month is 0-indexed
-                
+
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
-                
+
                 // Check if selected date is today
                 const selectedDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
                 if (selectedDateOnly.getTime() === today.getTime()) {
@@ -462,10 +464,32 @@ function setupDateFilter() {
                     dateFilterText.textContent = date.toLocaleDateString('en-US', options);
                     dateFilterBtn.classList.add('has-custom-date');
                 }
-                
+
                 triggerLogsSearch();
             }
+
+            // Hide the picker after selection
+            hideDatePicker();
         });
+
+        // Handle when picker is closed without selection (blur/focusout)
+        datePicker.addEventListener('blur', () => {
+            // Small delay to allow change event to fire first
+            setTimeout(() => {
+                hideDatePicker();
+            }, 100);
+        });
+    }
+}
+
+// Helper function to hide the date picker
+function hideDatePicker() {
+    const datePicker = document.getElementById('date-picker');
+    if (datePicker) {
+        datePicker.style.display = 'none'; // Completely hide the element
+        datePicker.style.pointerEvents = 'none'; // Disable pointer events when hidden
+        datePicker.style.top = '-1000px'; // Move off-screen
+        datePicker.style.left = '-1000px';
     }
 }
 

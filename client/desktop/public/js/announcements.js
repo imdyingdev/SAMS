@@ -195,14 +195,8 @@ function renderAnnouncements(announcements) {
     
     announcementsList.innerHTML = '';
     
-    // Determine number of columns based on screen width
-    const screenWidth = window.innerWidth;
-    let numColumns = 2; // default
-    if (screenWidth >= 1400) {
-        numColumns = 3; // full screen
-    } else if (screenWidth <= 768) {
-        numColumns = 1; // mobile
-    }
+    // Always use 2 columns for bento box layout
+    let numColumns = 2;
     
     // Create columns
     const columns = [];
@@ -219,6 +213,23 @@ function renderAnnouncements(announcements) {
         const card = createAnnouncementCard(announcement);
         columns[columnIndex].appendChild(card);
     });
+
+    // After rendering, check for date overflow and shorten if needed
+    setTimeout(() => {
+        const dateSpans = document.querySelectorAll('.announcement-date span');
+        dateSpans.forEach(span => {
+            if (span.scrollWidth > span.clientWidth + 10) { // some tolerance
+                const dateStr = span.getAttribute('data-date');
+                const date = new Date(dateStr);
+                const shortDate = date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                }).replace(/(\w{3}) (\d{1,2}), (\d{4})/, '$1. $2, $3');
+                span.textContent = shortDate;
+            }
+        });
+    }, 100);
 }
 
 // Create announcement card
@@ -256,7 +267,7 @@ function createAnnouncementCard(announcement) {
             </div>
             <div class="announcement-date">
                 <i class='bx bx-calendar'></i>
-                <span>${formattedDate}</span>
+                <span data-date="${announcement.created_at}">${formattedDate}</span>
             </div>
         </div>
     `;

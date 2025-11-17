@@ -89,7 +89,7 @@ window.initializeStudentChart = async function initializeStudentChart(elementId 
                     type: 'bar',
                     data: chartData,
                     itemStyle: {
-                        borderRadius: [6, 6, 0, 0],
+                        // borderRadius: [6, 6, 0, 0],
                         color: '#38e038'
                     }
                 }
@@ -99,6 +99,10 @@ window.initializeStudentChart = async function initializeStudentChart(elementId 
         console.log('Setting chart options with data:', chartData);
         myChart.setOption(option);
         console.log('Chart options set successfully');
+        myChart.resize();
+        setTimeout(() => {
+            myChart.resize();
+        }, 0);
         
         // Handle window resize to make chart responsive
         window.addEventListener('resize', () => {

@@ -73,7 +73,7 @@ async function initDailyAttendanceChart() {
                 name: 'Daily Attendance',
                 data: weeklyData,
                 type: 'line',
-                smooth: true,
+                smooth: false,
                 lineStyle: {
                     color: '#38e038',
                     width: 3

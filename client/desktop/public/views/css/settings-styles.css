@@ -3,7 +3,6 @@
 .welcome-message {
     background-color: transparent;
     color: var(--text-dark);
-    margin-bottom: 2rem;
 }
 
 .welcome-title {
