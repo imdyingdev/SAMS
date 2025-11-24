@@ -285,7 +285,6 @@ nav ul li a:hover::after {
     transform: translateY(-3px);
     box-shadow: 0 6px 30px var(--primary-pink-shadow);
 }
-
 /* Navigation arrows */
 .nav-arrow {
     position: absolute;
