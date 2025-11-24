@@ -11,11 +11,22 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleScrollAnimation() {
         const announcements = document.querySelectorAll('.announcement');
         const updateTitle = document.querySelector('#update h2');
+        const approachItems = document.querySelectorAll('.approach-item');
         
         // Animate title if in viewport
         if (updateTitle && isInViewport(updateTitle)) {
             updateTitle.classList.add('animate');
         }
+        
+        // Animate each approach item if in viewport
+        approachItems.forEach((item, index) => {
+            if (isInViewport(item) && !item.classList.contains('animate')) {
+                // Add delay based on index for cascade effect
+                setTimeout(() => {
+                    item.classList.add('animate');
+                }, index * 100);
+            }
+        });
         
         // Animate each announcement if in viewport
         announcements.forEach((announcement, index) => {

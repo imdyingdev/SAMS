@@ -2,82 +2,61 @@ document.addEventListener('DOMContentLoaded', function() {
     // Navigation arrows functionality
     const leftArrow = document.querySelector('.nav-arrow.left');
     const rightArrow = document.querySelector('.nav-arrow.right');
+    const slideshowContainer = document.querySelector('.slideshow-container');
+    const slides = document.querySelectorAll('.slide');
     
-    // Sample hero content for carousel
-    const heroContent = [
-        {
-            title: 'AMPID Elementary School',
-            subtitle: 'Nurturing Young Minds, Building Bright Futures',
-            cta: 'Discover Our School',
-            ctaLink: '#learn-more'
-        },
-        {
-            title: 'Excellence in Education',
-            subtitle: 'Fostering Creativity and Academic Growth',
-            cta: 'Our Approach',
-            ctaLink: '#approach'
-        },
-        {
-            title: 'Student Success',
-            subtitle: 'Where Every Child Reaches Their Potential',
-            cta: 'Learn More',
-            ctaLink: '#programs'
+    // Clone slides for infinite loop
+    const firstSlide = slides[0].cloneNode(true);
+    const lastSlide = slides[slides.length - 1].cloneNode(true);
+    firstSlide.classList.add('clone', 'clone-first');
+    lastSlide.classList.add('clone', 'clone-last');
+    
+    slideshowContainer.insertBefore(lastSlide, slides[0]);
+    slideshowContainer.appendChild(firstSlide);
+    
+    // Start at the first real slide (index 1 after adding clone at start)
+    let currentSlide = 1;
+    const totalSlides = slides.length + 2; // original + 2 clones
+    
+    // Update slide position
+    function updateSlide(index, instant = false) {
+        if (instant) {
+            slideshowContainer.style.transition = 'none';
+        } else {
+            slideshowContainer.style.transition = 'transform 0.6s ease-in-out';
         }
-    ];
-
-    // Background images for carousel
-    const images = ['image1.jpg', 'image2.jpg', 'image3.jpg'];
-    
-    let currentSlide = 0;
-    
-    // Function to update hero content and background image
-    function updateHeroContent(index) {
-        const heroTitle = document.querySelector('.hero-content h1');
-        const heroSubtitle = document.querySelector('.hero-content p');
-        const heroCta = document.querySelector('.hero-content .cta-button');
-        const heroContentElement = document.querySelector('.hero-content');
-        const homeSection = document.getElementById('home');
-
-        // Add transition class
-        heroContentElement.classList.add('transitioning');
-
-        // Fade out
-        heroTitle.style.opacity = 0;
-        heroSubtitle.style.opacity = 0;
-        heroCta.style.opacity = 0;
-
-        setTimeout(() => {
-            // Update background image
-            homeSection.style.backgroundImage = `url('../images/${images[index]}')`;
-
-            // Update content
-            heroTitle.textContent = heroContent[index].title;
-            heroSubtitle.textContent = heroContent[index].subtitle;
-            heroCta.textContent = heroContent[index].cta;
-            heroCta.setAttribute('href', heroContent[index].ctaLink);
-
-            // Fade in
-            heroTitle.style.opacity = 1;
-            heroSubtitle.style.opacity = 1;
-            heroCta.style.opacity = 1;
-
-            // Remove transition class
+        
+        currentSlide = index;
+        const translateX = -currentSlide * 100;
+        slideshowContainer.style.transform = `translateX(${translateX}%)`;
+        
+        // Handle infinite loop - jump to real slide after transition
+        if (!instant) {
             setTimeout(() => {
-                heroContentElement.classList.remove('transitioning');
-            }, 300);
-        }, 300);
+                if (currentSlide === 0) {
+                    // Jump to last real slide
+                    updateSlide(slides.length, true);
+                } else if (currentSlide === totalSlides - 1) {
+                    // Jump to first real slide
+                    updateSlide(1, true);
+                }
+            }, 600); // Wait for transition to complete
+        }
     }
+    
+    // Initialize at first real slide
+    updateSlide(1, true);
     
     // Event listeners for navigation arrows
     if (leftArrow && rightArrow) {
         leftArrow.addEventListener('click', function() {
-            currentSlide = (currentSlide - 1 + heroContent.length) % heroContent.length;
-            updateHeroContent(currentSlide);
+            const newIndex = currentSlide - 1;
+            updateSlide(newIndex);
         });
         
         rightArrow.addEventListener('click', function() {
-            currentSlide = (currentSlide + 1) % heroContent.length;
-            updateHeroContent(currentSlide);
+            const newIndex = currentSlide + 1;
+            updateSlide(newIndex);
         });
     }
     

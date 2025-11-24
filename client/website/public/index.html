@@ -16,7 +16,11 @@
             </div>
         </div>
         <div class="main-nav">
-            <div class="logo">AMPID ES</div>
+            <div class="logo">
+                <img src="/icons/icon.png" alt="AMPID ES Logo" class="logo-icon">
+                <span class="logo-text-desktop">AMPID ELEMENTARY SCHOOL</span>
+                <span class="logo-text-mobile">AMPID ES</span>
+            </div>
             <nav>
                 <ul>
                     <li><a href="#home">Home</a></li>
@@ -28,12 +32,58 @@
 
     <section id="home">
         <button class="nav-arrow left">&lsaquo;</button>
-        <div class="hero-content">
-            <h1>AMPID Elementary School</h1>
-            <p>Nurturing Young Minds, Building Bright Futures</p>
-            <a href="#learn-more" class="cta-button">Discover Our School</a>
+        <div class="slideshow-container">
+            <div class="slide active" style="background-image: url('../images/image1.jpg');">
+                <div class="hero-content">
+                    <h1>AMPID Elementary School</h1>
+                    <p>Nurturing Young Minds, Building Bright Futures</p>
+                    <a href="#map" class="cta-button">Discover Our School</a>
+                </div>
+            </div>
+            <div class="slide" style="background-image: url('../images/image2.jpg');">
+                <div class="hero-content">
+                    <h1>Excellence in Education</h1>
+                    <p>Fostering Creativity and Academic Growth</p>
+                    <a href="#approach" class="cta-button">Our Approach</a>
+                </div>
+            </div>
+            <div class="slide" style="background-image: url('../images/image3.jpg');">
+                <div class="hero-content">
+                    <h1>Student Success</h1>
+                    <p>Where Every Child Reaches Their Potential</p>
+                    <a href="#programs" class="cta-button">Learn More</a>
+                </div>
+            </div>
         </div>
         <button class="nav-arrow right">&rsaquo;</button>
+    </section>
+
+    <section id="approach">
+        <div class="approach-header">
+            <h2>Our Approach</h2>
+        </div>
+        <div class="approach-container">
+            <div class="approach-item">
+                <img src="/images/our-approach/foundation.svg" alt="Foundation Building" class="approach-icon">
+                <h3>Foundation Building</h3>
+                <p>The school focuses on developing essential skills such as reading, writing, math, and basic problem-solving to prepare students for future grade levels.</p>
+            </div>
+            <div class="approach-item">
+                <img src="/images/our-approach/engaging.svg" alt="Engaging Learning" class="approach-icon">
+                <h3>Engaging and Age-Appropriate Learning</h3>
+                <p>Lessons are made fun, interactive, and simple—using activities, games, visuals, and hands-on tasks to help young learners stay interested and understand better.</p>
+            </div>
+            <div class="approach-item">
+                <img src="/images/our-approach/safe.png" alt="Safe Environment" class="approach-icon">
+                <h3>Safe and Nurturing Environment</h3>
+                <p>The school provides a caring, supportive, and child-friendly atmosphere where students feel safe, confident, and motivated to learn.</p>
+            </div>
+            <div class="approach-item">
+                <img src="/images/our-approach/feeding.svg" alt="Feeding Program" class="approach-icon">
+                <h3>Feeding Program Support</h3>
+                <p>The school implements a feeding program to promote proper nutrition, help students stay healthy, and ensure they have enough energy to focus and participate in class.</p>
+            </div>
+        </div>
     </section>
 
     <section id="update">
@@ -42,6 +92,20 @@
         </div>
         <div class="announcement-container">
             <!-- Announcements will be loaded dynamically by JavaScript -->
+        </div>
+    </section>
+
+    <section id="map">
+        <div class="map-section-header">
+            <h2>School Location</h2>
+            <p>Find Ampid 1 Elementary School on the map below.</p>
+        </div>
+        <div class="map-container">
+            <iframe
+                src="https://www.google.com/maps?q=14.6778626,121.1161222&z=18&output=embed"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade">
+            </iframe>
         </div>
     </section>
 
