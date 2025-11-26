@@ -7,7 +7,7 @@ import { initializeTables } from './database/db-init.js';
 import { createStudent, saveStudent, getAllStudents, getStudentsPaginated, deleteStudent, updateStudent, getStudentById, getUniqueGradeLevels, getUniqueSections, getAllUniqueSections, getStudentsForSF2, checkDuplicateLRNs, bulkImportStudents } from './database/student-service.js';
 import { extractSF1DataFromBuffer } from './services/sf1-extractor.js';
 import { getStudentStatsByGrade, getStudentStatsByGender } from './database/stats-service.js';
-import { getLogsPaginated, getRecentLogs, createLogEntry, deleteLogEntry, logRfidActivity, logStudentActivity, logAuthActivity } from './database/logs-service.js';
+import { getLogsPaginated, getRecentLogs, createLogEntry, deleteLogEntry, logRfidActivity, logStudentActivity, logAuthActivity, getLogsForExport, getAvailableFiltersForDate } from './database/logs-service.js';
 import { createAnnouncement, getAllAnnouncements, getAnnouncementsCount, getAnnouncementById, updateAnnouncement, deleteAnnouncement, searchAnnouncements } from './database/announcement-service.js';
 import { getTodayAttendanceStats, getWeeklyAttendanceStats } from './database/attendance-stats-service.js';
 import { SerialPort } from 'serialport';
@@ -1723,24 +1723,42 @@ ipcMain.handle('export-sf2-attendance', async (event, gradeLevel, section, lrnPr
   }
 });
 
-// Export logs handler - copies printable-time-in-time-out-sheet-a4.xlsx to user-selected location
-ipcMain.handle('export-logs-excel', async (event) => {
+// Get available filters for logs export
+ipcMain.handle('get-logs-export-filters', async (event, dateFilter = 'today') => {
   try {
-    console.log('IPC: Exporting logs to Excel');
+    console.log('IPC: Getting available filters for logs export, date:', dateFilter);
+    const filters = await getAvailableFiltersForDate(dateFilter);
+    return { success: true, ...filters };
+  } catch (error) {
+    console.error('IPC: Failed to get logs export filters:', error);
+    return { success: false, message: error.message, grades: [], sectionsMap: {} };
+  }
+});
 
-    // Path to the source xlsx file (relative to project)
-    const sourceFilePath = path.join(__dirname, '../public/assets/printable-time-in-time-out-sheet-a4.xlsx');
+// Export logs handler - creates XLSX with attendance data for selected date
+ipcMain.handle('export-logs-excel', async (event, dateFilter = 'today', gradeFilter = 'all', sectionFilter = 'all') => {
+  try {
+    console.log('IPC: Exporting logs to Excel for date:', dateFilter, 'grade:', gradeFilter, 'section:', sectionFilter);
 
-    // Check if source file exists
-    if (!fs.existsSync(sourceFilePath)) {
-      return { success: false, message: 'Source Excel file not found at: ' + sourceFilePath };
+    // Get logs for the specified date with filters
+    const logs = await getLogsForExport(dateFilter, gradeFilter, sectionFilter);
+
+    if (!logs || logs.length === 0) {
+      return { success: false, message: 'No logs found for the selected date.' };
+    }
+
+    // Format date for filename
+    let dateString;
+    if (dateFilter === 'today') {
+      dateString = new Date().toISOString().split('T')[0];
+    } else {
+      dateString = dateFilter;
     }
 
     // Show save dialog
-    const currentDate = new Date().toISOString().split('T')[0];
     const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
-      title: 'Save Logs Excel File',
-      defaultPath: `SAMS_Logs_Report_${currentDate}.xlsx`,
+      title: 'Save Attendance Logs',
+      defaultPath: `SAMS_Attendance_${dateString}.xlsx`,
       filters: [
         { name: 'Excel Files', extensions: ['xlsx'] },
         { name: 'All Files', extensions: ['*'] }
@@ -1751,70 +1769,84 @@ ipcMain.handle('export-logs-excel', async (event) => {
       return { success: false, message: 'Export cancelled by user' };
     }
 
-    // Load the Excel file
+    // Create a new workbook
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(sourceFilePath);
+    workbook.creator = 'SAMS';
+    workbook.created = new Date();
 
-    // Get the first worksheet
-    const worksheet = workbook.worksheets[0];
+    // Add worksheet
+    const worksheet = workbook.addWorksheet('Attendance');
 
-    // Insert a new row at position 57 (below row 56)
-    worksheet.insertRow(57, []);
+    // Define columns
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'Grade', key: 'grade', width: 10 },
+      { header: 'Section', key: 'section', width: 15 },
+      { header: 'Time In', key: 'timeIn', width: 15 },
+      { header: 'Time Out', key: 'timeOut', width: 15 }
+    ];
 
-    // Get data from row 56 and copy to the new row 57
-    const row56 = worksheet.getRow(56);
-    const row57 = worksheet.getRow(57);
+    // Style header row
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF4472C4' }
+    };
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    row56.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-      const newCell = row57.getCell(colNumber);
-      // Copy only the style (borders, etc.), not the value
-      newCell.style = cell.style;
-    });
+    // Helper function to format time
+    const formatTime = (date) => {
+      if (!date) return '';
+      // Convert to Philippines timezone
+      const options = {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZone: 'Asia/Manila'
+      };
+      return date.toLocaleString('en-US', options);
+    };
 
-    row57.commit();
+    // Add data rows
+    logs.forEach((log, index) => {
+      const row = worksheet.addRow({
+        name: log.name,
+        grade: log.grade,
+        section: log.section,
+        timeIn: formatTime(log.timeIn),
+        timeOut: formatTime(log.timeOut)
+      });
 
-    // Unmerge cells in row 57 first (in case they're already merged from the insert)
-    try {
-      worksheet.unMergeCells(`A57:B57`);
-    } catch (e) { /* ignore if not merged */ }
-    try {
-      worksheet.unMergeCells(`F57:G57`);
-    } catch (e) { /* ignore if not merged */ }
-
-    // Merge cells in row 57: A-B and F-G (matching row 56)
-    worksheet.mergeCells(`A57:B57`);
-    worksheet.mergeCells(`F57:G57`);
-
-    // Clear all values in row 57 (keep only borders and merged cells)
-    row57.eachCell({ includeEmpty: true }, (cell) => {
-      cell.value = null;
-    });
-    row57.commit();
-
-    // Get value from A56 and increment by 1 for A57
-    const cellA56 = worksheet.getCell('A56');
-    const valueA56 = cellA56.value;
-    let newValue = 1; // Default value
-
-    if (valueA56 !== null && valueA56 !== undefined) {
-      // If it's a number, increment it
-      if (typeof valueA56 === 'number') {
-        newValue = valueA56 + 1;
-      } else if (typeof valueA56 === 'string' && !isNaN(parseFloat(valueA56))) {
-        newValue = parseFloat(valueA56) + 1;
+      // Alternate row colors
+      if (index % 2 === 1) {
+        row.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF2F2F2' }
+        };
       }
-    }
+    });
 
-    // Set the incremented value in A57 with formatting
-    const cellA57 = worksheet.getCell('A57');
-    cellA57.value = newValue;
-    cellA57.alignment = { vertical: 'middle', horizontal: 'center' };
-    cellA57.font = { size: 7 };
+    // Add borders to all cells
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+    });
 
-    // Save the modified file to the selected location
+    // Save the file
     await workbook.xlsx.writeFile(result.filePath);
 
-    console.log('IPC: Logs Excel export completed successfully with row inserted at position 56');
+    console.log('IPC: Logs Excel export completed successfully:', result.filePath);
     return { success: true, message: 'Excel file exported successfully', filePath: result.filePath };
 
   } catch (error) {

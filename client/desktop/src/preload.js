@@ -65,7 +65,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Export functionality
   exportStudentsExcel: (students) => ipcRenderer.invoke('export-students-excel', students),
-  exportLogsExcel: () => ipcRenderer.invoke('export-logs-excel'),
+  exportLogsExcel: (dateFilter, gradeFilter, sectionFilter) => ipcRenderer.invoke('export-logs-excel', dateFilter, gradeFilter, sectionFilter),
+  getLogsExportFilters: (dateFilter) => ipcRenderer.invoke('get-logs-export-filters', dateFilter),
   getUniqueGradeLevels: () => ipcRenderer.invoke('get-unique-grade-levels'),
   getUniqueSections: (gradeLevel) => ipcRenderer.invoke('get-unique-sections', gradeLevel),
   getAllUniqueSections: () => ipcRenderer.invoke('get-all-unique-sections'),

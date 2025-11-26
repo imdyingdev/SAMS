@@ -522,38 +522,262 @@ function setupLogsExportButton() {
     
     if (exportButton) {
         exportButton.addEventListener('click', async () => {
+            // Show export filter modal
+            await showExportFilterModal();
+        });
+    }
+}
+
+// Show export filter modal with grade/section dropdowns (mimics SF2 export modal)
+async function showExportFilterModal() {
+    try {
+        // Get available filters for the current date
+        const filtersResult = await window.electronAPI.getLogsExportFilters(currentDateFilter);
+        
+        if (!filtersResult.success && filtersResult.grades.length === 0) {
+            alert('No logs found for the selected date.');
+            return;
+        }
+
+        const { grades, sectionsMap } = filtersResult;
+
+        // Create modal overlay
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        `;
+
+        // Create modal content
+        const modalContent = document.createElement('div');
+        modalContent.style.cssText = `
+            background: white;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            min-width: 400px;
+            max-width: 500px;
+            animation: slideUp 0.3s ease;
+        `;
+
+        // Add animation keyframes
+        if (!document.getElementById('modal-animations')) {
+            const style = document.createElement('style');
+            style.id = 'modal-animations';
+            style.textContent = `
+                @keyframes slideUp {
+                    from {
+                        transform: translateY(30px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Title
+        const title = document.createElement('h3');
+        title.textContent = 'Export Attendance';
+        title.style.cssText = 'margin: 0 0 20px 0; color: #333;';
+        modalContent.appendChild(title);
+
+        // Date display
+        let dateDisplay = 'Today';
+        if (currentDateFilter !== 'today' && /^\d{4}-\d{2}-\d{2}$/.test(currentDateFilter)) {
+            const [year, month, day] = currentDateFilter.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            dateDisplay = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        }
+
+        const dateInfo = document.createElement('p');
+        dateInfo.textContent = `Date: ${dateDisplay}`;
+        dateInfo.style.cssText = 'margin: 0 0 15px 0; color: #666; font-size: 14px;';
+        modalContent.appendChild(dateInfo);
+
+        // Grade Level selector
+        const gradeLabel = document.createElement('label');
+        gradeLabel.textContent = 'Grade Level:';
+        gradeLabel.style.cssText = 'display: block; margin-bottom: 5px; font-weight: bold;';
+        modalContent.appendChild(gradeLabel);
+
+        const gradeSelect = document.createElement('select');
+        gradeSelect.style.cssText = `
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        `;
+        gradeSelect.innerHTML = '<option value="all">All Grades</option>';
+        grades.forEach(grade => {
+            const option = document.createElement('option');
+            option.value = grade;
+            option.textContent = `Grade ${grade}`;
+            gradeSelect.appendChild(option);
+        });
+        modalContent.appendChild(gradeSelect);
+
+        // Section selector
+        const sectionLabel = document.createElement('label');
+        sectionLabel.textContent = 'Section:';
+        sectionLabel.style.cssText = 'display: block; margin-bottom: 5px; font-weight: bold;';
+        modalContent.appendChild(sectionLabel);
+
+        const sectionSelect = document.createElement('select');
+        sectionSelect.style.cssText = `
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            font-size: 14px;
+        `;
+        sectionSelect.innerHTML = '<option value="all">All Sections</option>';
+        sectionSelect.disabled = true;
+        modalContent.appendChild(sectionSelect);
+
+        // Buttons container
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.style.cssText = 'display: flex; gap: 10px; justify-content: flex-end;';
+
+        // Cancel button
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Cancel';
+        cancelButton.style.cssText = `
+            background-color: #6c757d;
+            color: white;
+            border: 1px solid #6c757d;
+            padding: 8px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+        `;
+
+        // Export button
+        const exportButton = document.createElement('button');
+        exportButton.textContent = 'Export';
+        exportButton.style.cssText = `
+            background-color: #10B981;
+            color: white;
+            border: 1px solid #10B981;
+            padding: 8px 20px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        `;
+
+        buttonsContainer.appendChild(cancelButton);
+        buttonsContainer.appendChild(exportButton);
+        modalContent.appendChild(buttonsContainer);
+
+        modal.appendChild(modalContent);
+        document.body.appendChild(modal);
+
+        // Handle grade level change
+        gradeSelect.addEventListener('change', () => {
+            const selectedGrade = gradeSelect.value;
+            
+            // Reset section dropdown
+            sectionSelect.innerHTML = '<option value="all">All Sections</option>';
+            
+            if (selectedGrade === 'all') {
+                sectionSelect.disabled = true;
+            } else {
+                const sections = sectionsMap[selectedGrade] || [];
+                if (sections.length > 0) {
+                    sections.forEach(section => {
+                        const option = document.createElement('option');
+                        option.value = section;
+                        option.textContent = section;
+                        sectionSelect.appendChild(option);
+                    });
+                    sectionSelect.disabled = false;
+                } else {
+                    sectionSelect.disabled = true;
+                }
+            }
+        });
+
+        // Handle export
+        exportButton.addEventListener('click', async () => {
+            const selectedGrade = gradeSelect.value;
+            const selectedSection = sectionSelect.value;
+
+            // Disable button and show loading
+            exportButton.disabled = true;
+            exportButton.textContent = 'Exporting...';
+
             try {
-                // Show loading state
-                const originalHTML = exportButton.innerHTML;
-                exportButton.innerHTML = '<i class="bx bx-download"></i> Downloading...';
-                exportButton.disabled = true;
-                
-                console.log('Download logs button clicked');
-                const result = await window.electronAPI.exportLogsExcel();
-                
-                // Reset button
-                exportButton.innerHTML = originalHTML;
-                exportButton.disabled = false;
-                
+                console.log('Exporting with filters:', { dateFilter: currentDateFilter, grade: selectedGrade, section: selectedSection });
+                const result = await window.electronAPI.exportLogsExcel(currentDateFilter, selectedGrade, selectedSection);
+
                 if (result.success) {
-                    console.log('Logs downloaded successfully:', result.filePath);
-                    // You can add a success notification here if needed
+                    console.log('Logs exported successfully:', result.filePath);
+                    document.body.removeChild(modal);
+                    showExportSuccessNotification(result.filePath);
                 } else {
                     if (result.message !== 'Export cancelled by user') {
-                        console.error('Download failed:', result.message);
-                        alert('Download failed: ' + result.message);
+                        alert('Export failed: ' + result.message);
                     }
                 }
             } catch (error) {
-                console.error('Failed to download logs:', error);
-                alert('Failed to download logs: ' + error.message);
-                
-                // Reset button on error
-                exportButton.innerHTML = '<i class="bx bx-download"></i> Download';
+                console.error('Export failed:', error);
+                alert('Export failed: ' + error.message);
+            } finally {
+                // Re-enable button
                 exportButton.disabled = false;
+                exportButton.textContent = 'Export';
             }
         });
+
+        // Handle cancel
+        cancelButton.addEventListener('click', () => {
+            document.body.removeChild(modal);
+        });
+
+        // Close modal when clicking outside
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+
+    } catch (error) {
+        console.error('Failed to show export modal:', error);
+        alert('Failed to load export options: ' + error.message);
     }
+}
+
+// Show success notification after export
+function showExportSuccessNotification(filePath) {
+    const notification = document.createElement('div');
+    notification.className = 'notification notification-success';
+    notification.textContent = 'Attendance exported successfully!';
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+        }
+    }, 3000);
 }
 
 // Setup pagination control event listeners

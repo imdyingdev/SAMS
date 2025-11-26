@@ -271,10 +271,8 @@
 }
 
 .modal-content {
-    background: var(--glass-light);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: white;
+    border: 1px solid #e5e7eb;
     border-radius: var(--border-radius);
     width: 90%;
     max-width: 600px;
@@ -304,12 +302,12 @@
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid #e5e7eb;
 }
 
 .modal-header h2 {
     margin: 0;
-    color: var(--text-white);
+    color: #333;
     font-size: 1.5rem;
     font-weight: 600;
 }
@@ -318,7 +316,7 @@
     background: transparent;
     border: none;
     font-size: 2rem;
-    color: var(--text-white);
+    color: #666;
     cursor: pointer;
     padding: 0;
     width: 30px;
@@ -339,7 +337,7 @@
 }
 
 .modal-body p {
-    color: var(--text-white-muted);
+    color: #666;
     font-size: 1rem;
     line-height: 1.6;
     margin-bottom: 1.5rem;
@@ -352,7 +350,7 @@
 
 .form-group label {
     display: block;
-    color: var(--text-white);
+    color: #333;
     font-size: 0.95rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
@@ -362,10 +360,10 @@
 .form-group textarea {
     width: 100%;
     padding: 0.75rem;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #fff;
+    border: 1px solid #ddd;
     border-radius: var(--border-radius);
-    color: var(--text-white);
+    color: #333;
     font-size: 1rem;
     transition: all 0.3s ease;
     font-family: inherit;
@@ -376,7 +374,7 @@
     outline: none;
     border-color: var(--primary-blue);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    background: rgba(255, 255, 255, 0.15);
+    background: #fff;
 }
 
 .form-group textarea {
@@ -386,7 +384,7 @@
 
 .form-group input::placeholder,
 .form-group textarea::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: #999;
 }
 
 /* Modal Actions */
@@ -410,14 +408,14 @@
 }
 
 .btn-cancel {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--text-white);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: #f3f4f6;
+    color: #333;
+    border: 1px solid #ddd;
 }
 
 .btn-cancel:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: #e5e7eb;
+    border-color: #ccc;
 }
 
 .btn-submit {

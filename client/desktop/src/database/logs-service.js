@@ -336,6 +336,186 @@ export async function deleteLogEntry(logId) {
 }
 
 /**
+ * Get available grade levels and sections from logs for a specific date
+ * @param {string} dateFilter - Date filter ('today', 'YYYY-MM-DD', etc.)
+ * @returns {Promise<Object>} Object with grades array and sections map
+ */
+export async function getAvailableFiltersForDate(dateFilter = 'today') {
+    try {
+        console.log('[LOGS] Getting available filters for date:', dateFilter);
+
+        // Build date condition
+        let dateCondition = '';
+        let queryParams = [];
+        
+        if (dateFilter === 'today') {
+            dateCondition = `WHERE (rl.timestamp AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila')::date`;
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateFilter)) {
+            dateCondition = `WHERE (rl.timestamp AT TIME ZONE 'Asia/Manila')::date = $1::date`;
+            queryParams.push(dateFilter);
+        }
+
+        // Query to get unique grade/section combinations from logs
+        const query = `
+            SELECT DISTINCT
+                gs.grade_level,
+                gs.section_name as section
+            FROM rfid_logs rl
+            LEFT JOIN students s ON rl.rfid = s.rfid
+            LEFT JOIN grade_sections gs ON s.grade_section_id = gs.id
+            ${dateCondition}
+            AND gs.grade_level IS NOT NULL
+            ORDER BY gs.grade_level, gs.section_name
+        `;
+
+        const result = await pool.query(query, queryParams);
+        
+        // Build grades array and sections map
+        const gradesSet = new Set();
+        const sectionsMap = {};
+
+        for (const row of result.rows) {
+            if (row.grade_level) {
+                gradesSet.add(row.grade_level);
+                
+                if (!sectionsMap[row.grade_level]) {
+                    sectionsMap[row.grade_level] = [];
+                }
+                if (row.section && !sectionsMap[row.grade_level].includes(row.section)) {
+                    sectionsMap[row.grade_level].push(row.section);
+                }
+            }
+        }
+
+        const grades = Array.from(gradesSet).sort((a, b) => {
+            // Sort numerically if possible
+            const numA = parseInt(a);
+            const numB = parseInt(b);
+            if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+            return String(a).localeCompare(String(b));
+        });
+
+        console.log('[LOGS] Available grades:', grades);
+        console.log('[LOGS] Sections map:', sectionsMap);
+
+        return { grades, sectionsMap };
+        
+    } catch (error) {
+        console.error('[LOGS] Error getting available filters:', error.message);
+        throw new Error(`Failed to retrieve available filters: ${error.message}`);
+    }
+}
+
+/**
+ * Get all logs for a specific date for export (no pagination)
+ * Groups logs by student to consolidate time_in and time_out into single rows
+ * @param {string} dateFilter - Date filter ('today', 'YYYY-MM-DD', etc.)
+ * @param {string} gradeFilter - Grade level filter (optional, 'all' or specific grade)
+ * @param {string} sectionFilter - Section filter (optional, 'all' or specific section)
+ * @returns {Promise<Array>} Array of grouped attendance records
+ */
+export async function getLogsForExport(dateFilter = 'today', gradeFilter = 'all', sectionFilter = 'all') {
+    try {
+        console.log('[LOGS] Getting logs for export with filters:', { dateFilter, gradeFilter, sectionFilter });
+
+        // Build WHERE conditions
+        let whereConditions = [];
+        let queryParams = [];
+        let paramIndex = 1;
+        
+        // Date filter
+        if (dateFilter === 'today') {
+            whereConditions.push(`(rl.timestamp AT TIME ZONE 'Asia/Manila')::date = (NOW() AT TIME ZONE 'Asia/Manila')::date`);
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateFilter)) {
+            whereConditions.push(`(rl.timestamp AT TIME ZONE 'Asia/Manila')::date = $${paramIndex}::date`);
+            queryParams.push(dateFilter);
+            paramIndex++;
+        }
+
+        // Grade filter
+        if (gradeFilter && gradeFilter !== 'all') {
+            whereConditions.push(`gs.grade_level = $${paramIndex}`);
+            queryParams.push(gradeFilter);
+            paramIndex++;
+        }
+
+        // Section filter
+        if (sectionFilter && sectionFilter !== 'all') {
+            whereConditions.push(`gs.section_name = $${paramIndex}`);
+            queryParams.push(sectionFilter);
+            paramIndex++;
+        }
+
+        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+        // Query to get all logs for the date, ordered by student and timestamp
+        const query = `
+            SELECT
+                rl.id,
+                rl.rfid,
+                rl.tap_type as log_type,
+                rl.timestamp,
+                s.first_name,
+                s.last_name,
+                gs.grade_level,
+                gs.section_name as section,
+                CONCAT(s.last_name, ', ', s.first_name) as student_name
+            FROM rfid_logs rl
+            LEFT JOIN students s ON rl.rfid = s.rfid
+            LEFT JOIN grade_sections gs ON s.grade_section_id = gs.id
+            ${whereClause}
+            ORDER BY gs.grade_level, gs.section_name, s.last_name, s.first_name, rl.timestamp ASC
+        `;
+
+        const result = await pool.query(query, queryParams);
+        const logs = result.rows;
+
+        console.log('[LOGS] Raw logs count:', logs.length);
+
+        // Group logs by student, finding first time_in and last time_out for each student
+        const studentMap = new Map();
+
+        for (const log of logs) {
+            const studentKey = log.rfid || log.student_name || 'unknown';
+            
+            if (!studentMap.has(studentKey)) {
+                studentMap.set(studentKey, {
+                    name: log.student_name || '(N/A)',
+                    grade: log.grade_level || '',
+                    section: log.section || '',
+                    timeIn: null,
+                    timeOut: null
+                });
+            }
+
+            const student = studentMap.get(studentKey);
+            const timestamp = new Date(log.timestamp);
+
+            if (log.log_type === 'time_in') {
+                // Take the first time_in
+                if (!student.timeIn) {
+                    student.timeIn = timestamp;
+                }
+            } else if (log.log_type === 'time_out') {
+                // Take the last time_out
+                student.timeOut = timestamp;
+            }
+        }
+
+        // Convert map to array
+        const groupedLogs = Array.from(studentMap.values());
+        
+        console.log('[LOGS] Grouped logs count:', groupedLogs.length);
+
+        return groupedLogs;
+        
+    } catch (error) {
+        console.error('[LOGS] Error getting logs for export:', error.message);
+        throw new Error(`Failed to retrieve logs for export: ${error.message}`);
+    }
+}
+
+/**
  * Delete old logs (cleanup function)
  * @param {number} daysToKeep - Number of days to keep logs
  * @returns {Promise<Object>} Result object
