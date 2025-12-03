@@ -7,7 +7,7 @@ import { authenticateUser, User } from '../services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Re-export User interface from authService for consistency
-export { User } from '../services/authService';
+export type { User } from '../services/authService';
 
 export interface LoginCredentials {
   username: string;

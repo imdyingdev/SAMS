@@ -16,16 +16,13 @@
     font-size: 1.1rem;
 }
 
-.date-picker-hidden {
-    position: fixed;
+/* Date picker input - hidden, triggered via JS */
+.date-picker-input {
+    position: absolute;
     opacity: 0;
+    width: 0;
+    height: 0;
     pointer-events: none;
-    width: auto;
-    height: auto;
-    z-index: 9999;
-    /* Position off-screen when not active */
-    top: -1000px;
-    left: -1000px;
 }
 
 .logs-container {
@@ -511,6 +508,14 @@
     margin: 0 !important; /* Remove ALL margins for clean flexbox distribution */
     flex-shrink: 0; /* Prevent pagination from shrinking */
     overflow: visible;
+}
+
+/* Total records count in pagination */
+.logs-container .total-records {
+    font-size: 0.875rem;
+    color: var(--text-white-muted);
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 /* Export section styling for logs */

@@ -11,15 +11,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { loginStyles } from './styles/login.styles';
-import { useFonts } from './hooks/useFonts';
-import { getUserSession, clearUserSession, getUserFullName, User } from './utils/auth';
-import { Colors, Typography, Spacing, BorderRadius} from './styles/colors';
-import CalendarScreen from './components/CalendarScreen';
-import FloatingActionButton from './components/FloatingActionButton';
-import ActivityList from './components/ActivityList';
-import FixedHeader from './components/FixedHeader';
-import SettingsView from './components/SettingsView';
+import { loginStyles } from '../styles/login.styles';
+import { useFonts } from '../hooks/useFonts';
+import { getUserSession, clearUserSession, getUserFullName, User } from '../utils/auth';
+import { Colors, Typography, Spacing, BorderRadius} from '../styles/colors';
+import CalendarScreen from '../components/CalendarScreen';
+import FloatingActionButton from '../components/FloatingActionButton';
+import ActivityList from '../components/ActivityList';
+import FixedHeader from '../components/FixedHeader';
+import SettingsView from '../components/SettingsView';
 
 interface CalendarEvent {
   date: string; // Format: 'YYYY-MM-DD'

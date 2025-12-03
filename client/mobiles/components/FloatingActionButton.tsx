@@ -23,9 +23,9 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   const containerWidth = 300;
   const buttonWidth = containerWidth / 3;
 
-  const homeIcon = require('../../assets/icons/navigation/home.png');
-  const listIcon = require('../../assets/icons/navigation/log.png');
-  const settingsIcon = require('../../assets/icons/navigation/setting.png');
+  const homeIcon = require('../assets/icons/navigation/home.png');
+  const listIcon = require('../assets/icons/navigation/log.png');
+  const settingsIcon = require('../assets/icons/navigation/setting.png');
 
   const rotateInterpolate = rotation.interpolate({
     inputRange: [0, 1],

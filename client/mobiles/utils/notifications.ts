@@ -1,22 +1,35 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
+
+// Check if running in Expo Go (push notifications not supported in SDK 53+)
+const isExpoGo = Constants.appOwnership === 'expo';
 
 // Configure how notifications should be handled when the app is in foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Only set handler if not in Expo Go to avoid errors
+if (!isExpoGo) {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 /**
  * Request notification permissions from the user
  */
 export async function registerForPushNotifications(): Promise<string | null> {
+  // Skip push notification registration in Expo Go (not supported in SDK 53+)
+  if (isExpoGo) {
+    console.log('Push notifications are not supported in Expo Go. Use a development build.');
+    return null;
+  }
+
   let token = null;
 
   if (Platform.OS === 'android') {
@@ -56,6 +69,12 @@ export async function scheduleActivityNotification(
   tapType: 'time_in' | 'time_out',
   time: string
 ) {
+  // Skip notifications in Expo Go
+  if (isExpoGo) {
+    console.log(`[Expo Go] Notification skipped: ${studentName} - ${tapType} at ${time}`);
+    return;
+  }
+
   const title = tapType === 'time_in' ? '🎓 Time In Recorded' : '👋 Time Out Recorded';
   const body = `${studentName} - ${time}`;
 
@@ -75,5 +94,8 @@ export async function scheduleActivityNotification(
  * Cancel all scheduled notifications
  */
 export async function cancelAllNotifications() {
+  // Skip in Expo Go
+  if (isExpoGo) return;
+  
   await Notifications.cancelAllScheduledNotificationsAsync();
 }

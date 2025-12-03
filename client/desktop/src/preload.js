@@ -72,6 +72,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAllUniqueSections: () => ipcRenderer.invoke('get-all-unique-sections'),
   exportSF2Attendance: (gradeLevel, section, lrnPrefix) => ipcRenderer.invoke('export-sf2-attendance', gradeLevel, section, lrnPrefix),
 
+  // Grade Sections Management
+  getAllGradeSections: () => ipcRenderer.invoke('get-all-grade-sections'),
+  addSection: (gradeLevel, sectionName) => ipcRenderer.invoke('add-section', gradeLevel, sectionName),
+  updateSection: (sectionId, newSectionName) => ipcRenderer.invoke('update-section', sectionId, newSectionName),
+  deleteSection: (sectionId) => ipcRenderer.invoke('delete-section', sectionId),
+  addGradeLevel: (gradeLevel, initialSection) => ipcRenderer.invoke('add-grade-level', gradeLevel, initialSection),
+
   // RFID Scanning
   startRfidScan: () => ipcRenderer.send('rfid:start-scan'),
   stopRfidScan: () => ipcRenderer.send('rfid:stop-scan'),

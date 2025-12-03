@@ -4,8 +4,19 @@ const { getStudentByRfid } = require('./studentService');
 
 // Time window for showing confirmation modal (in minutes)
 // If someone tries to time out within this window after timing in, show confirmation modal
-// For testing/presentation: 1 minute, for production: 60 minutes (1 hour)
-const MODAL_TIME_WINDOW_MINUTES = 1; // Change to 60 for production
+// Default: 1 minute, configurable via settings panel
+let MODAL_TIME_WINDOW_MINUTES = 1;
+
+// Set timeout threshold (called from main process)
+function setTimeoutThreshold(minutes) {
+    MODAL_TIME_WINDOW_MINUTES = minutes;
+    console.log(`[RFID-SERVICE] Timeout threshold set to ${minutes} minutes`);
+}
+
+// Get current timeout threshold
+function getTimeoutThreshold() {
+    return MODAL_TIME_WINDOW_MINUTES;
+}
 
 // Store subscription for cleanup
 let realtimeSubscription = null;
@@ -532,5 +543,7 @@ module.exports = {
     wasRfidTappedRecently,
     getRecentLogsWithStudentInfo,
     initializeRealtimeSubscription,
-    cleanupRealtimeSubscription
+    cleanupRealtimeSubscription,
+    setTimeoutThreshold,
+    getTimeoutThreshold
 };

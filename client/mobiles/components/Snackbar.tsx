@@ -66,7 +66,7 @@ export default function Snackbar({ visible, message, onDismiss, duration = 3000 
       ]}
     >
       <View style={styles.content}>
-        <Image source={require('../../assets/icons/general/done.png')} style={styles.icon} />
+        <Image source={require('../assets/icons/general/done.png')} style={styles.icon} />
         <Text style={styles.message}>{message}</Text>
       </View>
     </Animated.View>

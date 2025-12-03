@@ -10,16 +10,18 @@ import {
   Dimensions,
   Animated,
   TextInput,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import { FontAwesome } from '@expo/vector-icons';
-import { loginStyles } from './styles/login.styles';
-import { useFonts } from './hooks/useFonts';
-import { getUserSession, getUserDisplayName, getUserCompleteName, User, storeUserSession } from './utils/auth';
-import AccountModal from './components/AccountModal';
-import { Colors, Typography, Spacing, BorderRadius } from './styles/colors';
+import { loginStyles } from '../styles/login.styles';
+import { useFonts } from '../hooks/useFonts';
+import { getUserSession, getUserDisplayName, getUserCompleteName, User, storeUserSession } from '../utils/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AccountModal from '../components/AccountModal';
+import { Colors, Typography, Spacing, BorderRadius } from '../styles/colors';
 
 const { width } = Dimensions.get('window');
 
@@ -28,6 +30,9 @@ export default function ProfileScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [accountModalVisible, setAccountModalVisible] = useState(false);
+  const [avatarPickerVisible, setAvatarPickerVisible] = useState(false);
+  const [selectedAvatarColor, setSelectedAvatarColor] = useState('#FF5C8D'); // pink by default
+  const [showAvatarImage, setShowAvatarImage] = useState(true); // true = show image, false = show color
 
   const translateY1 = useRef(new Animated.Value(20)).current;
   const translateY2 = useRef(new Animated.Value(20)).current;
@@ -39,7 +44,32 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     loadUserData();
+    loadAvatarSettings();
   }, []);
+
+  const loadAvatarSettings = async () => {
+    try {
+      const savedColor = await AsyncStorage.getItem('avatarColor');
+      const savedShowImage = await AsyncStorage.getItem('showAvatarImage');
+      if (savedColor) {
+        setSelectedAvatarColor(savedColor);
+      }
+      if (savedShowImage !== null) {
+        setShowAvatarImage(savedShowImage === 'true');
+      }
+    } catch (error) {
+      console.error('Error loading avatar settings:', error);
+    }
+  };
+
+  const saveAvatarSettings = async (color: string, showImage: boolean) => {
+    try {
+      await AsyncStorage.setItem('avatarColor', color);
+      await AsyncStorage.setItem('showAvatarImage', showImage.toString());
+    } catch (error) {
+      console.error('Error saving avatar settings:', error);
+    }
+  };
 
   const loadUserData = async () => {
     try {
@@ -142,11 +172,18 @@ export default function ProfileScreen() {
         {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.profileImageWrapper}>
-            <Image
-              source={require('../assets/images/avatars/pink-alien-with-horns.png')}
-              style={styles.profileImage}
-            />
-            <TouchableOpacity style={styles.cameraIcon}>
+            {showAvatarImage ? (
+              <Image
+                source={require('../assets/images/avatars/pink-alien-with-horns.png')}
+                style={styles.profileImage}
+              />
+            ) : (
+              <View style={[styles.profileImage, { backgroundColor: selectedAvatarColor }]} />
+            )}
+            <TouchableOpacity 
+              style={styles.cameraIcon}
+              onPress={() => setAvatarPickerVisible(true)}
+            >
               <FontAwesome name="camera" size={16} color="white" />
             </TouchableOpacity>
           </View>
@@ -213,6 +250,62 @@ export default function ProfileScreen() {
         onEmailUpdated={handleEmailUpdated}
         initialMode="changeEmail"
       />
+
+      {/* Avatar Color Picker Modal */}
+      <Modal
+        visible={avatarPickerVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setAvatarPickerVisible(false)}
+      >
+        <View style={styles.avatarModalOverlay}>
+          <View style={styles.avatarModalContent}>
+            <View style={styles.avatarModalHeader}>
+              <Text style={styles.avatarModalTitle}>Choose Avatar Color</Text>
+              <TouchableOpacity onPress={() => setAvatarPickerVisible(false)}>
+                <Text style={styles.avatarModalCloseText}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.avatarGrid}>
+              {['#FF5C8D', '#9B59B6', '#3498DB', '#1ABC9C', '#F39C12', '#E74C3C', '#95A5A6', '#34495E', '#16A085'].map((color, index) => {
+                const isSelected = selectedAvatarColor === color && ((index === 0 && showAvatarImage) || (index !== 0 && !showAvatarImage));
+                return (
+                <TouchableOpacity
+                  key={color}
+                  style={[
+                    styles.avatarColorCircle,
+                    { backgroundColor: color },
+                    isSelected && styles.avatarColorSelected
+                  ]}
+                  onPress={async () => {
+                    const isImageOption = index === 0;
+                    setSelectedAvatarColor(color);
+                    setShowAvatarImage(isImageOption);
+                    await saveAvatarSettings(color, isImageOption);
+                    Alert.alert('Avatar Updated', 'Your avatar has been saved!', [
+                      { text: 'OK', onPress: () => setAvatarPickerVisible(false) }
+                    ]);
+                  }}
+                >
+                  {index === 0 && (
+                    <Image
+                      source={require('../assets/images/avatars/pink-alien-with-horns.png')}
+                      style={styles.avatarPreviewImage}
+                    />
+                  )}
+                  {isSelected && (
+                    <View style={styles.avatarCheckmark}>
+                      <FontAwesome name="check" size={20} color="white" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -332,5 +425,72 @@ const styles = {
     height: 20,
     tintColor: Colors.text.white,
     marginLeft: Spacing.sm,
+  },
+
+  // Avatar Picker Modal Styles
+  avatarModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: Spacing.lg,
+  },
+  avatarModalContent: {
+    backgroundColor: Colors.background.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    width: '90%' as any,
+    maxWidth: 400,
+  },
+  avatarModalHeader: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginBottom: Spacing.lg,
+  },
+  avatarModalTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: 'bold' as const,
+    color: Colors.text.dark,
+  },
+  avatarModalCloseText: {
+    fontSize: 32,
+    color: Colors.text.muted,
+    fontWeight: '300' as const,
+  },
+  avatarGrid: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    justifyContent: 'space-around' as const,
+    gap: Spacing.md,
+  },
+  avatarColorCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    borderWidth: 3,
+    borderColor: 'transparent',
+  },
+  avatarColorSelected: {
+    borderColor: Colors.primary.pink,
+    borderWidth: 4,
+  },
+  avatarPreviewImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+  },
+  avatarCheckmark: {
+    position: 'absolute' as const,
+    bottom: 0,
+    right: 0,
+    backgroundColor: Colors.primary.pink,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
 };

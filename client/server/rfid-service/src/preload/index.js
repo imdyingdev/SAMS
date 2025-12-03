@@ -122,5 +122,18 @@ contextBridge.exposeInMainWorld('rfidAPI', {
      * Get cache statistics
      * @returns {Object} Cache stats
      */
-    getCacheStats: () => ipcRenderer.invoke('get-cache-stats')
+    getCacheStats: () => ipcRenderer.invoke('get-cache-stats'),
+
+    /**
+     * Set the early timeout threshold
+     * @param {number} minutes - Threshold in minutes
+     * @returns {Promise<Object>} Result status
+     */
+    setTimeoutThreshold: (minutes) => ipcRenderer.invoke('set-timeout-threshold', minutes),
+
+    /**
+     * Get the current timeout threshold
+     * @returns {Promise<number>} Threshold in minutes
+     */
+    getTimeoutThreshold: () => ipcRenderer.invoke('get-timeout-threshold')
 });

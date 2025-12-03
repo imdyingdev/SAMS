@@ -144,21 +144,40 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
             ${whereClause}
         `;
         
+        // Count unique students (by RFID) - each student with time_in/time_out counts as 1
+        // Use COALESCE to handle potential NULL values
+        const uniqueStudentsQuery = `
+            SELECT COUNT(DISTINCT COALESCE(rl.rfid, '')) as unique_students
+            FROM rfid_logs rl
+            LEFT JOIN students s ON rl.rfid = s.rfid
+            LEFT JOIN grade_sections gs ON s.grade_section_id = gs.id
+            ${whereClause}
+        `;
+        
         const countParams = queryParams.slice(0, -2); // Remove LIMIT and OFFSET params
         
-        // Execute both queries
+        // Execute all queries
         console.log('DEBUG: Executing logs query:', logsQuery);
         console.log('DEBUG: Query params:', queryParams);
         console.log('DEBUG: Count query:', countQuery);
         console.log('DEBUG: Count params:', countParams);
+        console.log('DEBUG: Unique students query:', uniqueStudentsQuery);
 
-        const [logsResult, countResult] = await Promise.all([
-            pool.query(logsQuery, queryParams),
-            pool.query(countQuery, countParams)
-        ]);
-
+        // Execute queries separately to better handle errors
+        const logsResult = await pool.query(logsQuery, queryParams);
         console.log('DEBUG: Logs query result row count:', logsResult.rows.length);
+        
+        const countResult = await pool.query(countQuery, countParams);
         console.log('DEBUG: Count query result:', countResult.rows[0]);
+        
+        let uniqueStudentsResult;
+        try {
+            uniqueStudentsResult = await pool.query(uniqueStudentsQuery, countParams);
+            console.log('DEBUG: Unique students result:', uniqueStudentsResult.rows[0]);
+        } catch (uniqueErr) {
+            console.error('DEBUG: Unique students query failed:', uniqueErr.message);
+            uniqueStudentsResult = { rows: [{ unique_students: 0 }] };
+        }
 
         const logs = logsResult.rows;
         const totalLogs = parseInt(countResult.rows[0].total);
@@ -184,16 +203,21 @@ export async function getLogsPaginated(page = 1, pageSize = 50, searchTerm = '',
             totalLogs: parseInt(summaryResult.rows[0].total_logs)
         };
         
+        const uniqueStudents = parseInt(uniqueStudentsResult.rows[0].unique_students) || 0;
+        console.log('DEBUG: Parsed uniqueStudents value:', uniqueStudents);
+        
         const pagination = {
             currentPage: page,
             totalPages: totalPages,
             totalLogs: totalLogs,
+            uniqueStudents: uniqueStudents,
             pageSize: pageSize,
             hasPrevPage: page > 1,
             hasNextPage: page < totalPages
         };
 
         console.log('DEBUG: Returning result object with keys:', Object.keys({ logs, pagination, summary }));
+        console.log('DEBUG: Pagination object:', JSON.stringify(pagination));
         console.log('DEBUG: Sample log data structure:', logs.length > 0 ? Object.keys(logs[0]) : 'No logs');
 
         return {

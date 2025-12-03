@@ -82,7 +82,7 @@ window.initializeGenderChart = async function initializeGenderChart(elementId = 
                 }
             },
             title: {
-                text: `Gender Distribution (${totalStudents})`,
+                text: 'Gender Distribution',
                 left: 'center',
                 top: 0,
                 textStyle: {

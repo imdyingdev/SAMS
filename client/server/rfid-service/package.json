@@ -19,7 +19,9 @@
       "src/**/*",
       "dist/**/*",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "how-it-work.json",
+      "moon-waiting.json"
     ],
     "extraFiles": [
       {

@@ -8,8 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { router } from 'expo-router';
 import LottieView from 'lottie-react-native';
-import { getStartedStyles } from './styles/getstarted.styles';
-import { useFonts } from './hooks/useFonts';
+import { getStartedStyles } from '../styles/getstarted.styles';
+import { useFonts } from '../hooks/useFonts';
 
 const onboardingData = [
   {

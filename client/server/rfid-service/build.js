@@ -55,4 +55,19 @@ if (fs.existsSync(assetsSrc)) {
     copyDir(assetsSrc, assetsDest);
 }
 
+// Copy lottie animation files to dist directory
+const lottieFiles = ['how-it-work.json', 'moon-waiting.json'];
+console.log('Copying lottie animation files...');
+lottieFiles.forEach(file => {
+    const lottieSrc = path.join(__dirname, file);
+    const lottieDest = path.join(__dirname, 'dist', file);
+    
+    if (fs.existsSync(lottieSrc)) {
+        fs.copyFileSync(lottieSrc, lottieDest);
+        console.log(`  ✓ Copied ${file}`);
+    } else {
+        console.warn(`  ⚠ Warning: ${file} not found`);
+    }
+});
+
 console.log('Build completed successfully!');

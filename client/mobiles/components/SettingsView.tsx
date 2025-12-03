@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Image, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, BorderRadius } from '../styles/colors';
@@ -9,6 +10,8 @@ import AccountModal from './AccountModal';
 export default function SettingsView() {
   const [user, setUser] = useState<User | null>(null);
   const [isAccountModalVisible, setIsAccountModalVisible] = useState(false);
+  const [selectedAvatarColor, setSelectedAvatarColor] = useState('#FF5C8D');
+  const [showAvatarImage, setShowAvatarImage] = useState(true);
 
   const handleEmailUpdated = async (newEmail: string) => {
     if (user) {
@@ -21,7 +24,23 @@ export default function SettingsView() {
 
   useEffect(() => {
     loadUserData();
+    loadAvatarSettings();
   }, []);
+
+  const loadAvatarSettings = async () => {
+    try {
+      const savedColor = await AsyncStorage.getItem('avatarColor');
+      const savedShowImage = await AsyncStorage.getItem('showAvatarImage');
+      if (savedColor) {
+        setSelectedAvatarColor(savedColor);
+      }
+      if (savedShowImage !== null) {
+        setShowAvatarImage(savedShowImage === 'true');
+      }
+    } catch (error) {
+      console.error('Error loading avatar settings:', error);
+    }
+  };
 
   const loadUserData = async () => {
     try {
@@ -57,14 +76,20 @@ export default function SettingsView() {
   return (
     <View style={styles.content}>
       <View style={styles.profileSection}>
-        <LinearGradient
-          colors={[Colors.primary.pink, Colors.secondary.orange]}
-          style={styles.avatar}
-        >
-          <Text style={styles.avatarText}>
-            {user ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase() : 'U'}
-          </Text>
-        </LinearGradient>
+        <TouchableOpacity onPress={() => router.push('/profile' as any)}>
+          {showAvatarImage ? (
+            <Image
+              source={require('../assets/images/avatars/pink-alien-with-horns.png')}
+              style={styles.avatarImage}
+            />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: selectedAvatarColor }]}>
+              <Text style={styles.avatarText}>
+                {user ? `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase() : 'U'}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
         <View style={styles.profileInfo}>
           {user ? (
             <>
@@ -84,16 +109,16 @@ export default function SettingsView() {
 
       <View style={styles.menuList}>
         <TouchableOpacity style={styles.menuItem}>
-          <Image source={require('../../assets/icons/navigation/notification.png')} style={styles.iconImage} />
+          <Image source={require('../assets/icons/navigation/notification.png')} style={styles.iconImage} />
           <Text style={styles.menuText}>Notifications</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem} onPress={() => setIsAccountModalVisible(true)}>
-          <Image source={require('../../assets/icons/settings/user.png')} style={styles.iconImage} />
+          <Image source={require('../assets/icons/settings/user.png')} style={styles.iconImage} />
           <Text style={styles.menuText}>Privacy & Security</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem}>
-          <Image source={require('../../assets/icons/settings/question.png')} style={styles.iconImage} />
-          <Text style={styles.menuText}>Help</Text>
+        <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/faqs' as any)}>
+          <Image source={require('../assets/icons/settings/question.png')} style={styles.iconImage} />
+          <Text style={styles.menuText}>FAQs</Text>
         </TouchableOpacity>
       </View>
 
@@ -133,7 +158,7 @@ const styles = {
     backgroundColor: Colors.glass.overlay2,
     borderWidth: 1,
     borderColor: Colors.glass.overlay1,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.sm,
     marginBottom: Spacing.lg,
   },
   avatar: {
@@ -148,6 +173,12 @@ const styles = {
     color: Colors.text.white,
     fontSize: Typography.sizes.lg,
     fontWeight: 'bold' as const,
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: Spacing.md,
   },
   profileInfo: {
     flex: 1,
@@ -213,7 +244,7 @@ const styles = {
   },
   logoutButton: {
     backgroundColor: '#F75270',
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.sm,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   },

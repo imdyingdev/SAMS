@@ -413,28 +413,7 @@ function setupDateFilter() {
     if (dateFilterBtn && datePicker) {
         dateFilterBtn.addEventListener('click', (e) => {
             e.preventDefault();
-
-            // Position the date picker near the button
-            const btnRect = dateFilterBtn.getBoundingClientRect();
-            const rightOffset = 20; // Shift 20px to the right
-            const bottomOffset = 8; // 8px below button
-
-            // Calculate position
-            let leftPos = btnRect.left + rightOffset;
-            const topPos = btnRect.bottom + bottomOffset;
-
-            // Check if it would overflow the right edge (assume calendar width ~300px)
-            const calendarWidth = 300;
-            if (leftPos + calendarWidth > window.innerWidth) {
-                leftPos = window.innerWidth - calendarWidth - 20; // 20px from right edge
-            }
-
-            datePicker.style.display = 'block'; // Show the element
-            datePicker.style.position = 'fixed';
-            datePicker.style.top = `${topPos}px`;
-            datePicker.style.left = `${leftPos}px`;
-            datePicker.style.pointerEvents = 'all'; // Enable pointer events when visible
-
+            e.stopPropagation();
             datePicker.showPicker();
         });
 
@@ -484,13 +463,8 @@ function setupDateFilter() {
 
 // Helper function to hide the date picker
 function hideDatePicker() {
-    const datePicker = document.getElementById('date-picker');
-    if (datePicker) {
-        datePicker.style.display = 'none'; // Completely hide the element
-        datePicker.style.pointerEvents = 'none'; // Disable pointer events when hidden
-        datePicker.style.top = '-1000px'; // Move off-screen
-        datePicker.style.left = '-1000px';
-    }
+    // Native date picker hides automatically after selection
+    // No additional action needed with CSS-based positioning
 }
 
 // Trigger search with current filters
@@ -817,10 +791,18 @@ function updateLogsPaginationControls(pagination) {
     const prevPageBtn = document.getElementById('btn-prev-logs-page');
     const nextPageBtn = document.getElementById('btn-next-logs-page');
     const pageNumbers = document.getElementById('logs-page-numbers');
+    const totalRecordsEl = document.getElementById('logs-total-records');
 
     // Update button states
     if (prevPageBtn) prevPageBtn.disabled = !pagination.hasPrevPage;
     if (nextPageBtn) nextPageBtn.disabled = !pagination.hasNextPage;
+
+    // Update total records count - show unique students (each student's time in/out counts as 1)
+    if (totalRecordsEl) {
+        const uniqueStudents = pagination.uniqueStudents || 0;
+        console.log('DEBUG: Updating total records display, uniqueStudents:', uniqueStudents, 'pagination:', pagination);
+        totalRecordsEl.textContent = `${uniqueStudents} ${uniqueStudents === 1 ? 'student' : 'students'}`;
+    }
 
     // Update page numbers
     if (pageNumbers) {

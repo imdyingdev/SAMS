@@ -190,7 +190,7 @@ export default function RegistrationVerificationModal({
             {showSuccess ? (
               <View style={styles.successContainer}>
                 <LottieView
-                  source={require('../../assets/animations/Success.json')}
+                  source={require('../assets/animations/Success.json')}
                   autoPlay
                   loop={false}
                   style={styles.successAnimation}

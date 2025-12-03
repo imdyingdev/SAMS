@@ -19,6 +19,9 @@ export default function AccountModal({ visible, onClose, userId, currentEmail, o
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showChangeEmail, setShowChangeEmail] = useState(false);
   const [showEmailSuccess, setShowEmailSuccess] = useState(false);
+  const [showActiveSessions, setShowActiveSessions] = useState(false);
+  const [showPasswordVerification, setShowPasswordVerification] = useState(false);
+  const [passwordVerificationCode, setPasswordVerificationCode] = useState('');
   const [successEmail, setSuccessEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -103,6 +106,10 @@ export default function AccountModal({ visible, onClose, userId, currentEmail, o
     setShowChangeEmail(true);
   };
 
+  const handleActiveSessions = () => {
+    setShowActiveSessions(true);
+  };
+
   const handleSendVerificationCode = async () => {
     if (!userId) {
       Alert.alert('Error', 'User not found. Please try logging in again.');
@@ -156,7 +163,7 @@ export default function AccountModal({ visible, onClose, userId, currentEmail, o
 
 
       // Send verification code to new email
-      const response = await fetch('http://192.168.1.6:3001/api/email/send-verification', {
+      const response = await fetch('https://sams-email-apiv2.vercel.app/api/send-verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,7 +202,7 @@ export default function AccountModal({ visible, onClose, userId, currentEmail, o
     setIsVerifyingCode(true);
     try {
       // First verify the code
-      const verifyResponse = await fetch('http://192.168.1.6:3001/api/email/verify-code', {
+      const verifyResponse = await fetch('https://sams-email-apiv2.vercel.app/api/verify-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -306,7 +313,7 @@ export default function AccountModal({ visible, onClose, userId, currentEmail, o
           </View>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
-              {showChangePassword ? 'Change Password' : showEmailSuccess ? 'Change Email' : showChangeEmail ? 'Change Email' : 'Privacy & Security'}
+              {showChangePassword ? 'Change Password' : showEmailSuccess ? 'Change Email' : showChangeEmail ? 'Change Email' : showActiveSessions ? 'Active Sessions' : 'Privacy & Security'}
             </Text>
             <TouchableOpacity
               style={styles.modalCloseBtn}
@@ -314,6 +321,7 @@ export default function AccountModal({ visible, onClose, userId, currentEmail, o
                 showChangePassword ? () => setShowChangePassword(false) :
                 showEmailSuccess ? () => setShowEmailSuccess(false) :
                 showChangeEmail && initialMode === 'menu' ? () => setShowChangeEmail(false) :
+                showActiveSessions ? () => setShowActiveSessions(false) :
                 onClose
               }
             >
@@ -372,7 +380,7 @@ export default function AccountModal({ visible, onClose, userId, currentEmail, o
             ) : showEmailSuccess ? (
               <View style={styles.successContainer}>
                 <LottieView
-                  source={require('../../assets/animations/Success.json')}
+                  source={require('../assets/animations/Success.json')}
                   autoPlay
                   loop={false}
                   style={styles.successAnimation}
@@ -498,11 +506,29 @@ export default function AccountModal({ visible, onClose, userId, currentEmail, o
                   </>
                 )}
               </View>
+            ) : showActiveSessions ? (
+              <View>
+                <Text style={styles.instructionText}>Devices where you're currently logged in</Text>
+                <View style={styles.sessionItem}>
+                  <View style={styles.sessionLeft}>
+                    <Image source={require('../assets/icons/modal/session.png')} style={styles.sessionIcon} />
+                    <View>
+                      <Text style={styles.sessionDevice}>Mobile Device</Text>
+                      <Text style={styles.sessionTime}>
+                        {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity>
+                    <Text style={styles.sessionCurrent}>Current</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             ) : (
               <>
                 <TouchableOpacity style={styles.accountOption} onPress={handleChangePassword}>
                   <View style={styles.accountOptionLeft}>
-                    <Image source={require('../../assets/icons/modal/padlock.png')} style={styles.accountOptionIcon} />
+                    <Image source={require('../assets/icons/modal/padlock.png')} style={styles.accountOptionIcon} />
                     <View>
                       <Text style={styles.accountOptionText}>Change Password</Text>
                       <Text style={styles.accountOptionSubtext}>Update your account password</Text>
@@ -511,15 +537,15 @@ export default function AccountModal({ visible, onClose, userId, currentEmail, o
                 </TouchableOpacity>
 
 
-                <TouchableOpacity style={styles.accountOption}>
+                <TouchableOpacity style={styles.accountOption} onPress={handleActiveSessions}>
                   <View style={styles.accountOptionLeft}>
-                    <Image source={require('../../assets/icons/modal/session.png')} style={styles.accountOptionIcon} />
+                    <Image source={require('../assets/icons/modal/session.png')} style={styles.accountOptionIcon} />
                     <View>
                       <Text style={styles.accountOptionText}>Active Sessions</Text>
                       <Text style={styles.accountOptionSubtext}>Manage your active sessions</Text>
                     </View>
                   </View>
-                  <Text style={styles.accountOptionCount}>2</Text>
+                  <Text style={styles.accountOptionCount}>1</Text>
                 </TouchableOpacity>
               </>
             )}
@@ -750,5 +776,41 @@ const styles = {
     color: Colors.text.white,
     fontSize: Typography.sizes.base,
     fontFamily: Typography.families.bodySemiBold,
+  },
+  sessionItem: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    marginTop: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.background.light,
+  },
+  sessionLeft: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+  },
+  sessionIcon: {
+    width: 24,
+    height: 24,
+    marginRight: Spacing.md,
+    tintColor: Colors.primary.pink,
+  },
+  sessionDevice: {
+    fontSize: Typography.sizes.base,
+    fontFamily: Typography.families.bodySemiBold,
+    color: Colors.text.dark,
+  },
+  sessionTime: {
+    fontSize: Typography.sizes.sm,
+    fontFamily: Typography.families.body,
+    color: Colors.text.muted,
+    marginTop: Spacing.xs - 4,
+  },
+  sessionCurrent: {
+    fontSize: Typography.sizes.sm,
+    fontFamily: Typography.families.bodySemiBold,
+    color: Colors.primary.pink,
   },
 };

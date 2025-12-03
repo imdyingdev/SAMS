@@ -245,6 +245,130 @@ export const loginStyles = StyleSheet.create({
     fontFamily: Typography.families.bodyLight,
     color: Colors.text.whiteMuted,
   },
+
+  // Forgot Password Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: Colors.background.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  modalTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: 'bold',
+    color: Colors.text.dark,
+  },
+  modalCloseText: {
+    fontSize: 32,
+    color: Colors.text.muted,
+    fontWeight: '300',
+  },
+  modalLabel: {
+    fontSize: Typography.sizes.base,
+    color: Colors.text.dark,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.md,
+    fontWeight: '600',
+  },
+  modalSubtext: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.muted,
+    marginBottom: Spacing.md,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    fontSize: Typography.sizes.base,
+    color: Colors.text.dark,
+    backgroundColor: Colors.background.white,
+    marginBottom: Spacing.md,
+  },
+  modalButton: {
+    backgroundColor: Colors.primary.pink,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+  },
+  modalButtonText: {
+    color: Colors.text.white,
+    fontSize: Typography.sizes.base,
+    fontWeight: 'bold',
+  },
+  modalButtonDisabled: {
+    opacity: 0.6,
+  },
+
+  // Bottom Sheet Styles for Forgot Password
+  bottomSheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  bottomSheetContent: {
+    backgroundColor: Colors.background.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: Spacing.lg,
+    maxHeight: '90%',
+  },
+  bottomSheetHandle: {
+    width: 60,
+    height: 20,
+    alignSelf: 'center',
+    marginBottom: Spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    backgroundColor: Colors.border.default,
+    borderRadius: 2,
+  },
+  bottomSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+    paddingBottom: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default,
+  },
+  bottomSheetTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: 'bold',
+    color: Colors.text.dark,
+  },
+  bottomSheetBody: {
+    paddingTop: Spacing.md,
+  },
+  resendButton: {
+    alignItems: 'center',
+    padding: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  resendButtonText: {
+    color: Colors.primary.pink,
+    fontSize: Typography.sizes.sm,
+    fontWeight: '600',
+  },
 });
 
 // Animation configurations for keyboard interactions

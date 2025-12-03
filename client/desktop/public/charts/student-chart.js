@@ -30,6 +30,7 @@ window.initializeStudentChart = async function initializeStudentChart(elementId 
         // Get real data from database if not provided
         let chartData = data;
         let gradeLabels = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6'];
+        let totalStudents = 0;
         
         if (!chartData && window.electronAPI && window.electronAPI.getStudentStatsByGrade) {
             try {
@@ -37,6 +38,7 @@ window.initializeStudentChart = async function initializeStudentChart(elementId 
                 const stats = await window.electronAPI.getStudentStatsByGrade();
                 chartData = stats.data;
                 gradeLabels = stats.labels;
+                totalStudents = chartData.reduce((sum, val) => sum + val, 0);
                 console.log('Successfully loaded student statistics:', stats);
             } catch (error) {
                 console.error('Failed to fetch student statistics, using sample data:', error);
@@ -45,6 +47,9 @@ window.initializeStudentChart = async function initializeStudentChart(elementId 
         } else if (!chartData) {
             // Fallback sample data if no electronAPI available
             chartData = [150, 99, 22, 88, 75, 1];
+            totalStudents = chartData.reduce((sum, val) => sum + val, 0);
+        } else {
+            totalStudents = chartData.reduce((sum, val) => sum + val, 0);
         }
         
         const option = {
@@ -103,6 +108,36 @@ window.initializeStudentChart = async function initializeStudentChart(elementId 
         setTimeout(() => {
             myChart.resize();
         }, 0);
+        
+        // Create total students badge that shows on hover
+        const totalBadge = document.createElement('div');
+        totalBadge.className = 'grade-total-badge';
+        totalBadge.textContent = `Total: ${totalStudents}`;
+        totalBadge.style.cssText = `
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(56, 224, 56, 0.9);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 10;
+        `;
+        chartDom.style.position = 'relative';
+        chartDom.appendChild(totalBadge);
+        
+        // Show badge on hover
+        chartDom.addEventListener('mouseenter', () => {
+            totalBadge.style.opacity = '1';
+        });
+        chartDom.addEventListener('mouseleave', () => {
+            totalBadge.style.opacity = '0';
+        });
         
         // Handle window resize to make chart responsive
         window.addEventListener('resize', () => {

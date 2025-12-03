@@ -20,12 +20,12 @@
                         <li class="filter-menu-item"><a href="#0" data-tap-type="time_out">Time Out</a></li>
                     </ol>
                 </li>
-                <li class="filter-menu-item">
+                <li class="filter-menu-item date-filter-wrapper">
                     <a href="#0" class="filter-menu-link date-filter-btn" id="date-filter-btn">
                         <i class='bx bx-calendar'></i>
                         <span id="date-filter-text">Today</span>
                     </a>
-                    <input type="date" id="date-picker" class="date-picker-hidden">
+                    <input type="date" id="date-picker" class="date-picker-input">
                 </li>
             </ol>
         </nav>
@@ -59,6 +59,7 @@
     <!-- Pagination Controls -->
     <div class="table-options">
         <div class="pagination-main" id="logs-pagination-container" style="display: none;">
+            <span class="total-records" id="logs-total-records"></span>
             <div class="pagination-controls">
                 <button class="nav-btn" id="btn-prev-logs-page" title="Previous Page">‹</button>
                 <div class="page-numbers" id="logs-page-numbers">

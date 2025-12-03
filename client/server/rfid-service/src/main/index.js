@@ -12,7 +12,9 @@ const {
     wasRfidTappedRecently,
     getRecentLogsWithStudentInfo,
     initializeRealtimeSubscription,
-    cleanupRealtimeSubscription
+    cleanupRealtimeSubscription,
+    setTimeoutThreshold,
+    getTimeoutThreshold
 } = require('../services/rfidLogService');
 
 let mainWindow;
@@ -229,6 +231,16 @@ ipcMain.on('window:toggle-fullscreen', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.setFullScreen(!mainWindow.isFullScreen());
     }
+});
+
+// Timeout threshold handlers
+ipcMain.handle('set-timeout-threshold', (event, minutes) => {
+    setTimeoutThreshold(minutes);
+    return { success: true, threshold: minutes };
+});
+
+ipcMain.handle('get-timeout-threshold', () => {
+    return getTimeoutThreshold();
 });
 
 // App lifecycle

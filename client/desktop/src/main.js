@@ -10,6 +10,7 @@ import { getStudentStatsByGrade, getStudentStatsByGender } from './database/stat
 import { getLogsPaginated, getRecentLogs, createLogEntry, deleteLogEntry, logRfidActivity, logStudentActivity, logAuthActivity, getLogsForExport, getAvailableFiltersForDate } from './database/logs-service.js';
 import { createAnnouncement, getAllAnnouncements, getAnnouncementsCount, getAnnouncementById, updateAnnouncement, deleteAnnouncement, searchAnnouncements } from './database/announcement-service.js';
 import { getTodayAttendanceStats, getWeeklyAttendanceStats } from './database/attendance-stats-service.js';
+import { getAllGradeSections, addSection, updateSection, deleteSection, addGradeLevel } from './database/grade-sections-service.js';
 import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
 import { fileURLToPath } from 'url';
@@ -769,9 +770,9 @@ ipcMain.handle('system:get-version', async (event) => {
 // Get paginated logs handler
 ipcMain.handle('get-logs-paginated', async (event, page = 1, pageSize = 50, searchTerm = '', logTypeFilter = '', dateFilter = '') => {
   try {
-    console.log(`IPC: Fetching logs page ${page} with filters`);
+    console.log(`IPC: Fetching logs page ${page} with filters: searchTerm='${searchTerm}', logTypeFilter='${logTypeFilter}', dateFilter='${dateFilter}'`);
     const result = await getLogsPaginated(page, pageSize, searchTerm, logTypeFilter, dateFilter);
-    console.log(`IPC: Sending paginated logs data: ${result.logs.length} logs, page ${result.pagination.currentPage}/${result.pagination.totalPages}`);
+    console.log(`IPC: Sending paginated logs data: ${result.logs.length} logs, page ${result.pagination.currentPage}/${result.pagination.totalPages}, uniqueStudents: ${result.pagination.uniqueStudents}`);
     return result;
   } catch (error) {
     console.error('IPC: Failed to get paginated logs:', error);
@@ -1852,6 +1853,68 @@ ipcMain.handle('export-logs-excel', async (event, dateFilter = 'today', gradeFil
   } catch (error) {
     console.error('IPC: Failed to export logs to Excel:', error);
     return { success: false, message: 'Failed to export Excel file: ' + error.message };
+  }
+});
+
+// ==================== GRADE SECTIONS IPC HANDLERS ====================
+
+// Get all grade sections grouped by grade level
+ipcMain.handle('get-all-grade-sections', async () => {
+  console.log('IPC: Fetching all grade sections');
+  try {
+    const result = await getAllGradeSections();
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to fetch grade sections:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Add a new section to a grade level
+ipcMain.handle('add-section', async (event, gradeLevel, sectionName) => {
+  console.log(`IPC: Adding section "${sectionName}" to Grade ${gradeLevel}`);
+  try {
+    const result = await addSection(gradeLevel, sectionName);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to add section:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Update a section's name
+ipcMain.handle('update-section', async (event, sectionId, newSectionName) => {
+  console.log(`IPC: Updating section ${sectionId} to "${newSectionName}"`);
+  try {
+    const result = await updateSection(sectionId, newSectionName);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to update section:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Delete a section
+ipcMain.handle('delete-section', async (event, sectionId) => {
+  console.log(`IPC: Deleting section ${sectionId}`);
+  try {
+    const result = await deleteSection(sectionId);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to delete section:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Add a new grade level with initial section
+ipcMain.handle('add-grade-level', async (event, gradeLevel, initialSection) => {
+  console.log(`IPC: Adding Grade ${gradeLevel} with section "${initialSection}"`);
+  try {
+    const result = await addGradeLevel(gradeLevel, initialSection);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to add grade level:', error);
+    return { success: false, message: error.message };
   }
 });
 

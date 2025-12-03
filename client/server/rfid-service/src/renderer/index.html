@@ -15,9 +15,41 @@
             </div>
             <span id="display-text" class="display-text">Ready for RFID Tap</span><span id="dots" class="dots">.</span>
             <div class="bottom-buttons">
-                <button id="exportBtn" class="bottom-btn" tabindex="-1">Export</button>
+                <span id="timeDisplay" class="time-display">00:00:00 AM</span>
                 <button id="howBtn" class="bottom-btn" tabindex="-1">How?</button>
                 <button id="settingsBtn" class="bottom-btn" tabindex="-1">Settings</button>
+            </div>
+            
+            <div id="settingsOverlay" class="settings-overlay">
+                <div class="settings-content">
+                    <h2>Settings</h2>
+                    <div class="settings-item">
+                        <label for="timeoutThreshold">Early Timeout Threshold</label>
+                        <p class="settings-description">Show confirmation modal when timing out within this duration</p>
+                        <select id="timeoutThreshold">
+                            <option value="0.33">20 seconds (testing)</option>
+                            <option value="1">1 minute</option>
+                            <option value="2">2 minutes</option>
+                            <option value="3">3 minutes</option>
+                            <option value="4">4 minutes</option>
+                            <option value="5">5 minutes</option>
+                            <option value="custom">Custom time...</option>
+                        </select>
+                    </div>
+                    <div class="settings-item" id="customTimeContainer" style="display: none;">
+                        <label for="customTimeMinutes">Custom Time (minutes)</label>
+                        <p class="settings-description">Enter time in minutes (10-180, increments of 10)</p>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="number" id="customTimeMinutes" min="10" max="180" step="10" value="10" 
+                                   style="padding: 8px; border: 1px solid #4a5568; background: #2d3748; color: white; border-radius: 6px; width: 100px;" />
+                            <span style="color: #a0aec0;">minutes (Max: 3 hours)</span>
+                        </div>
+                    </div>
+                    <div class="settings-actions">
+                        <button id="saveSettingsBtn" class="settings-save-btn">Save</button>
+                        <button id="closeSettingsBtn" class="settings-close-btn">Close</button>
+                    </div>
+                </div>
             </div>
             
             <div id="howOverlay" class="how-overlay">
