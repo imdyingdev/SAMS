@@ -79,6 +79,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteSection: (sectionId) => ipcRenderer.invoke('delete-section', sectionId),
   addGradeLevel: (gradeLevel, initialSection) => ipcRenderer.invoke('add-grade-level', gradeLevel, initialSection),
 
+  // Promotion Operations
+  promoteStudent: (studentId, targetGradeLevel, targetSection, promotedBy, notes) => 
+    ipcRenderer.invoke('promote-student', studentId, targetGradeLevel, targetSection, promotedBy, notes),
+  promoteStudentsByGrade: (currentGrade, targetGrade, sectionAssignment, promotedBy) => 
+    ipcRenderer.invoke('promote-students-by-grade', currentGrade, targetGrade, sectionAssignment, promotedBy),
+  promoteStudentsBySection: (gradeLevel, currentSection, targetSection, promotedBy) => 
+    ipcRenderer.invoke('promote-students-by-section', gradeLevel, currentSection, targetSection, promotedBy),
+  graduateStudent: (studentId, graduatedBy, notes) => 
+    ipcRenderer.invoke('graduate-student', studentId, graduatedBy, notes),
+  graduateGrade6Students: (graduatedBy) => 
+    ipcRenderer.invoke('graduate-grade6-students', graduatedBy),
+  getPromotionHistory: (studentId) => 
+    ipcRenderer.invoke('get-promotion-history', studentId),
+  getPromotionStats: () => 
+    ipcRenderer.invoke('get-promotion-stats'),
+
   // RFID Scanning
   startRfidScan: () => ipcRenderer.send('rfid:start-scan'),
   stopRfidScan: () => ipcRenderer.send('rfid:stop-scan'),

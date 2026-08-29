@@ -11,6 +11,7 @@ import { getLogsPaginated, getRecentLogs, createLogEntry, deleteLogEntry, logRfi
 import { createAnnouncement, getAllAnnouncements, getAnnouncementsCount, getAnnouncementById, updateAnnouncement, deleteAnnouncement, searchAnnouncements } from './database/announcement-service.js';
 import { getTodayAttendanceStats, getWeeklyAttendanceStats } from './database/attendance-stats-service.js';
 import { getAllGradeSections, addSection, updateSection, deleteSection, addGradeLevel } from './database/grade-sections-service.js';
+import { promoteStudent, promoteStudentsByGrade, promoteStudentsBySection, graduateStudent, graduateGrade6Students, getPromotionHistory, getPromotionStats } from './database/promotion-service.js';
 import { SerialPort } from 'serialport';
 import { ReadlineParser } from '@serialport/parser-readline';
 import { fileURLToPath } from 'url';
@@ -1914,6 +1915,92 @@ ipcMain.handle('add-grade-level', async (event, gradeLevel, initialSection) => {
     return result;
   } catch (error) {
     console.error('IPC: Failed to add grade level:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// ==================== PROMOTION IPC HANDLERS ====================
+
+// Promote individual student
+ipcMain.handle('promote-student', async (event, studentId, targetGradeLevel, targetSection, promotedBy, notes) => {
+  try {
+    console.log(`IPC: Promoting student ${studentId} to Grade ${targetGradeLevel} - ${targetSection}`);
+    const result = await promoteStudent(studentId, targetGradeLevel, targetSection, promotedBy, notes);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to promote student:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Promote students by grade level
+ipcMain.handle('promote-students-by-grade', async (event, currentGrade, targetGrade, sectionAssignment, promotedBy) => {
+  try {
+    console.log(`IPC: Batch promoting students from Grade ${currentGrade} to Grade ${targetGrade} (${sectionAssignment} assignment)`);
+    const result = await promoteStudentsByGrade(currentGrade, targetGrade, sectionAssignment, promotedBy);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to promote students by grade:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Promote students by section
+ipcMain.handle('promote-students-by-section', async (event, gradeLevel, currentSection, targetSection, promotedBy) => {
+  try {
+    console.log(`IPC: Batch promoting students from ${currentSection} to ${targetSection} in Grade ${gradeLevel}`);
+    const result = await promoteStudentsBySection(gradeLevel, currentSection, targetSection, promotedBy);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to promote students by section:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Graduate individual student
+ipcMain.handle('graduate-student', async (event, studentId, graduatedBy, notes) => {
+  try {
+    console.log(`IPC: Graduating student ${studentId}`);
+    const result = await graduateStudent(studentId, graduatedBy, notes);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to graduate student:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Graduate all Grade 6 students
+ipcMain.handle('graduate-grade6-students', async (event, graduatedBy) => {
+  try {
+    console.log('IPC: Batch graduating all Grade 6 students');
+    const result = await graduateGrade6Students(graduatedBy);
+    return result;
+  } catch (error) {
+    console.error('IPC: Failed to graduate Grade 6 students:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Get promotion history for a student
+ipcMain.handle('get-promotion-history', async (event, studentId) => {
+  try {
+    console.log(`IPC: Getting promotion history for student ${studentId}`);
+    const history = await getPromotionHistory(studentId);
+    return { success: true, history };
+  } catch (error) {
+    console.error('IPC: Failed to get promotion history:', error);
+    return { success: false, message: error.message };
+  }
+});
+
+// Get promotion statistics
+ipcMain.handle('get-promotion-stats', async (event) => {
+  try {
+    console.log('IPC: Getting promotion statistics');
+    const stats = await getPromotionStats();
+    return { success: true, stats };
+  } catch (error) {
+    console.error('IPC: Failed to get promotion stats:', error);
     return { success: false, message: error.message };
   }
 });
