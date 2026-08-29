@@ -1,81 +1,3 @@
-# Phase 2: Backend Promotion Service ✅ COMPLETED
-
-## Objective
-Implement the core business logic for student promotion and graduation operations.
-
-## Implementation Status: COMPLETED
-
-## Completed Tasks
-
-### 1. Created Promotion Service Module
-**File**: `src/database/promotion-service.js`
-- ✅ Implemented helper function to get grade_section_id from grade_level and section_name
-- ✅ Implemented individual student promotion with full history tracking
-- ✅ Implemented batch grade promotion with auto section assignment
-- ✅ Implemented batch grade promotion with manual section assignment
-- ✅ Implemented batch section promotion within same grade
-- ✅ Implemented individual student graduation with archiving
-- ✅ Implemented batch Grade 6 graduation capability
-- ✅ Implemented promotion history retrieval
-- ✅ Implemented promotion statistics calculation
-- ✅ Added comprehensive error handling and validation
-- ✅ Added transaction safety with try-catch for partial failures in batch operations
-
-### 2. Created Comprehensive Test Suite
-**File**: `tests/test-promotion-service.js`
-- ✅ Test individual student promotion
-- ✅ Test promotion history recording
-- ✅ Test individual student graduation
-- ✅ Test batch grade promotion (auto and manual)
-- ✅ Test batch section promotion
-- ✅ Test promotion statistics
-- ✅ Test error handling for invalid inputs
-- ✅ Test batch Grade 6 graduation (function verification)
-
-## Files Created/Modified
-
-### Created Files:
-- `client/desktop/src/database/promotion-service.js`
-- `client/desktop/tests/test-promotion-service.js`
-
-### Modified Files:
-- `phases/P2_Backend_Service.md`
-
-## Verification Results
-
-All testing checklist items completed successfully:
-- ✅ Individual student promotion works correctly
-- ✅ Batch grade promotion with auto section assignment
-- ✅ Batch grade promotion with manual section assignment
-- ✅ Batch section promotion works correctly
-- ✅ Individual graduation works correctly
-- ✅ Batch Grade 6 graduation works correctly
-- ✅ Promotion history is recorded accurately
-- ✅ Promotion statistics are calculated correctly
-- ✅ Error handling works for invalid inputs
-- ✅ Transactions are handled properly (partial failures)
-
-## Notes
-- This phase creates the complete backend service for promotion and graduation
-- All functions include comprehensive error handling
-- Supports both automatic and manual section assignment
-- Records complete audit trail in promotion history
-- Database structure compatibility verified and corrected during implementation
-- Ready for IPC integration in next phase
-
-## Post-Review Fixes Applied (Aug 29, 2026)
-- ✅ Fixed empty parameter array in `graduateGrade6Students` query
-- ✅ Removed dot removal from section name matching (prevents false matches)
-- ✅ Added grade progression validation (target must be higher than current)
-- ✅ Added Grade 6-only graduation validation
-- ✅ Added promotedBy/graduatedBy parameter validation to all functions
-- ✅ Added duplicate LRN check in graduated_students table
-- ✅ Corrected file path from `src/database/` to `client/desktop/src/database/`
-
-### 1. Create Promotion Service Module
-**File**: `src/database/promotion-service.js`
-
-```javascript
 import { query } from './db-connection.js';
 
 // Helper function to get grade_section_id from grade_level and section_name
@@ -90,7 +12,7 @@ async function getGradeSectionId(gradeLevel, sectionName) {
     const result = await query(`
       SELECT id FROM grade_sections
       WHERE grade_level = $1 
-        AND LOWER(REPLACE(section_name, '.', '')) = LOWER(REPLACE($2, '.', ''))
+        AND LOWER(section_name) = LOWER($2)
       LIMIT 1
     `, [cleanGrade, sectionName.trim()]);
     
@@ -103,6 +25,11 @@ async function getGradeSectionId(gradeLevel, sectionName) {
 
 // Promote individual student
 async function promoteStudent(studentId, targetGradeLevel, targetSection, promotedBy, notes = null) {
+  // Validate promotedBy parameter
+  if (!promotedBy) {
+    throw new Error('promotedBy parameter is required');
+  }
+
   try {
     // Get current student data
     const studentResult = await query(`
@@ -127,6 +54,13 @@ async function promoteStudent(studentId, targetGradeLevel, targetSection, promot
     // Check if already in target grade/section
     if (student.current_grade_section_id === targetGradeSectionId) {
       throw new Error('Student is already in the target grade/section');
+    }
+
+    // Validate grade progression (target must be higher than current)
+    const currentGradeNum = parseInt(student.grade_level);
+    const targetGradeNum = parseInt(targetGradeLevel.replace(/^Grade\s*/i, '').trim());
+    if (isNaN(currentGradeNum) || isNaN(targetGradeNum) || targetGradeNum <= currentGradeNum) {
+      throw new Error(`Invalid grade progression: Cannot promote from Grade ${student.grade_level} to Grade ${targetGradeLevel}`);
     }
     
     // Update student's grade_section_id
@@ -167,6 +101,11 @@ async function promoteStudent(studentId, targetGradeLevel, targetSection, promot
 
 // Promote students by grade level
 async function promoteStudentsByGrade(currentGrade, targetGrade, sectionAssignment, promotedBy) {
+  // Validate promotedBy parameter
+  if (!promotedBy) {
+    throw new Error('promotedBy parameter is required');
+  }
+
   try {
     // Get all students in current grade
     const studentsResult = await query(`
@@ -260,13 +199,18 @@ async function promoteStudentsByGrade(currentGrade, targetGrade, sectionAssignme
 
 // Promote students by section
 async function promoteStudentsBySection(gradeLevel, currentSection, targetSection, promotedBy) {
+  // Validate promotedBy parameter
+  if (!promotedBy) {
+    throw new Error('promotedBy parameter is required');
+  }
+
   try {
     const studentsResult = await query(`
       SELECT s.id, s.first_name, s.last_name, gs.grade_level, gs.section_name, gs.id as current_grade_section_id
       FROM students s
       JOIN grade_sections gs ON s.grade_section_id = gs.id
       WHERE gs.grade_level = $1 
-        AND LOWER(REPLACE(gs.section_name, '.', '')) = LOWER(REPLACE($2, '.', ''))
+        AND LOWER(gs.section_name) = LOWER($2)
         AND s.status = 'active'
     `, [gradeLevel, currentSection]);
     
@@ -313,6 +257,11 @@ async function promoteStudentsBySection(gradeLevel, currentSection, targetSectio
 
 // Graduate individual student
 async function graduateStudent(studentId, graduatedBy, notes = null) {
+  // Validate graduatedBy parameter
+  if (!graduatedBy) {
+    throw new Error('graduatedBy parameter is required');
+  }
+
   try {
     // Get student data
     const studentResult = await query(`
@@ -327,7 +276,23 @@ async function graduateStudent(studentId, graduatedBy, notes = null) {
     }
     
     const student = studentResult.rows[0];
-    
+
+    // Validate that student is in Grade 6
+    const studentGradeNum = parseInt(student.grade_level);
+    if (isNaN(studentGradeNum) || studentGradeNum !== 6) {
+      throw new Error(`Student can only graduate from Grade 6. Current grade: ${student.grade_level}`);
+    }
+
+    // Check for duplicate LRN in graduated_students
+    if (student.lrn) {
+      const duplicateCheck = await query(`
+        SELECT id FROM graduated_students WHERE lrn = $1 LIMIT 1
+      `, [student.lrn]);
+      if (duplicateCheck.rows.length > 0) {
+        throw new Error('A student with this LRN has already graduated');
+      }
+    }
+
     // Create archive record
     await query(`
       INSERT INTO graduated_students 
@@ -385,13 +350,18 @@ async function graduateStudent(studentId, graduatedBy, notes = null) {
 
 // Graduate all Grade 6 students
 async function graduateGrade6Students(graduatedBy) {
+  // Validate graduatedBy parameter
+  if (!graduatedBy) {
+    throw new Error('graduatedBy parameter is required');
+  }
+
   try {
     const studentsResult = await query(`
       SELECT s.id, s.first_name, s.last_name, gs.grade_level, gs.section_name, gs.id as current_grade_section_id
       FROM students s
       JOIN grade_sections gs ON s.grade_section_id = gs.id
       WHERE gs.grade_level = '6' AND s.status = 'active'
-    `, []);
+    `);
     
     if (studentsResult.rows.length === 0) {
       return { success: true, message: 'No Grade 6 students found to graduate', graduatedCount: 0 };
@@ -484,23 +454,3 @@ export {
   getPromotionHistory,
   getPromotionStats
 };
-```
-
-## Testing Checklist
-- [x] Individual student promotion works correctly ✅
-- [x] Batch grade promotion with auto section assignment ✅
-- [x] Batch grade promotion with manual section assignment ✅
-- [x] Batch section promotion works correctly ✅
-- [x] Individual graduation works correctly ✅
-- [x] Batch Grade 6 graduation works correctly ✅
-- [x] Promotion history is recorded accurately ✅
-- [x] Promotion statistics are calculated correctly ✅
-- [x] Error handling works for invalid inputs ✅
-- [x] Transactions are handled properly (partial failures) ✅ (try-catch in batch operations)
-
-## Notes
-- This phase creates the complete backend service
-- All functions include error handling
-- Supports both automatic and manual section assignment
-- Records complete audit trail in promotion history
-- Ready for IPC integration in next phase
